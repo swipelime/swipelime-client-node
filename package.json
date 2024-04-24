@@ -1,0 +1,57 @@
+{
+	"name": "swipelime-client-node",
+	"description": "swipelime-client-node is the official swipelime Node.js client library",
+	"version": "0.1.0",
+	"author": "swipelime (https://swipelime.com)",
+	"license": "MIT",
+	"repository": {
+		"type": "https",
+		"url": "https://github.com/swipelime/swipelime-client-node"
+	},
+	"bugs": "https://github.com/swipelime/swipelime-client-node/issues",
+	"homepage": "https://swipelime.com/",
+	"engines": {
+		"node": ">=20.0"
+	},
+	"keywords": [
+		"swipelime",
+		"restaurant",
+		"qr",
+		"menu",
+		"api"
+	],
+	"dependencies": {
+		"lodash": "^4.17.21",
+		"simpleddp-node": "^0.1.0",
+		"ws": "^8.16.0"
+	},
+	"devDependencies": {
+		"@types/lodash": "^4.17.0",
+		"@types/node": "^20.12.7",
+		"@types/ws": "^8.5.10",
+		"@typescript-eslint/eslint-plugin": "^5.6.0",
+		"@typescript-eslint/parser": "^5.6.0",
+		"eslint": "^8.4.1",
+		"eslint-config-airbnb-base": "^15.0.0",
+		"eslint-config-airbnb-typescript": "^16.1.0",
+		"eslint-plugin-import": "^2.29.1",
+		"eslint-plugin-n": "^16.6.2",
+		"eslint-plugin-promise": "^6.1.1",
+		"typescript": "^4.5.3"
+	},
+	"files": [
+		"CHANGELOG.md",
+		"CONTRIBUTING.md",
+		"dist",
+		"LICENSE",
+		"README.md"
+	],
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"clean": "rm -rf dist/*",
+		"lint": "eslint .",
+		"lint:fix": "eslint --fix ."
+	}
+}

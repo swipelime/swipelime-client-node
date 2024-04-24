@@ -1,0 +1,19 @@
+{
+	"name": "swipelime-client-node-example-typescript",
+	"description": "Example for swipelime client using TypeScript",
+	"type": "module",
+	"dependencies": {
+		"@types/node": "^20.12.2",
+		"dotenv": "^16.4.5",
+		"swipelime-client-node": "file:../../"
+	},
+	"main": "index.ts",
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"dev": "tsx --trace-warnings index.ts"
+	},
+	"devDependencies": {
+		"tsx": "^4.7.2",
+		"typescript": ">=3.0 && <5.5"
+	}
+}

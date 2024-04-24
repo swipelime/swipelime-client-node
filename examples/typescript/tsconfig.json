@@ -1,0 +1,13 @@
+{
+	"compilerOptions": {
+		"module": "esnext",
+		"moduleResolution": "node",
+		"target": "esnext",
+		"esModuleInterop": true,
+		"strict": true
+	},
+	"ts-node": {
+		"esm": true
+	},
+	"lib": ["esnext"]
+}
