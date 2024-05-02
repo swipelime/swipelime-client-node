@@ -4,6 +4,7 @@ import 'dotenv/config';
 const username = process.env['SWIPELIME_USERNAME'];
 const password = process.env['SWIPELIME_PASSWORD'];
 const environment = process.env['SWIPELIME_ENVIRONMENT'] as Environment | undefined;
+const tenantId = process.env['SWIPELIME_TENANT_ID'];
 
 if (username === undefined || password === undefined) throw new Error('SWIPELIME_USERNAME or SWIPELIME_PASSWORD environment variable not defined');
 
@@ -35,8 +36,10 @@ const client = new Client({ username, password }, { environment });
 			console.error('error', e.message);
 		});
 
+		if(!tenantId) throw new Error('SWIPELIME_TENANT_ID environment variable not defined');
+
 		// Register a service handler for one of the available tenants
-		const serviceHandler = await client.addServiceHandler({ tenantId: 'iWBXyWrWQA3qec6Sw' });
+		const serviceHandler = await client.addServiceHandler({ tenantId });
 
 		// Listen for new tasks and process them
 		serviceHandler.emitter.on('newTasks', (tasks) =>
@@ -48,15 +51,38 @@ const client = new Client({ username, password }, { environment });
 					// Test event
 					if(task.data.eventType === 'test')
 					{
-						console.log('test event has arrived');
+						console.log('test event', task.data.eventData);
 						// Do any processing here if needed
+					}
+
+					if(task.data.eventType === 'customer-joined-table')
+					{
+						console.log('customer-joined-table event', JSON.stringify(task.data.eventData, null, 2));
+					}
+
+					if(task.data.eventType === 'order-items-added')
+					{
+						console.log('order-items-added event', JSON.stringify(task.data.eventData, null, 2));
+					}
+
+					if(task.data.eventType === 'order-items-cancelled')
+					{
+						console.log('order-items-cancelled event', JSON.stringify(task.data.eventData, null, 2));
+					}
+
+					if(task.data.eventType === 'order-items-confirmed')
+					{
+						console.log('order-items-confirmed event', JSON.stringify(task.data.eventData, null, 2));
+					}
+
+					if(task.data.eventType === 'payment-requested')
+					{
+						console.log('payment-requested event', JSON.stringify(task.data.eventData, null, 2));
 					}
 
 					// Need to confirm all events to prevent them from being sent again
 					// Only confirm the event as done if it has been processed
 					await task.confirm();
-
-					console.log('test event has been confirmed');
 				}
 				else if(task instanceof TaskCommand)
 				{

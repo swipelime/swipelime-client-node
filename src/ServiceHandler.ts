@@ -10,7 +10,10 @@ import TaskCommand from './models/TaskCommand';
 import {
 	ServiceHandlerEventTypes,
 	IncomingTaskData,
-	TaskType
+	TaskType,
+	eventTypes,
+	commandTypes,
+	IdOption
 } from './types';
 
 import {
@@ -21,23 +24,57 @@ export * from './types';
 
 export class ServiceHandler
 {
+	/**
+	* The client instance used for communication.
+	*/
 	private readonly _client: Client;
+
+	/**
+	* The DDP client instance used for subscribing to tasks.
+	*/
 	private readonly _ddpClient: DDPClient;
+	
+	/**
+	* The ID of the tenant.
+	*/
 	private readonly _tenantId: string;
+	
+	/**
+	* The event emitter for handling service handler events.
+	*/
 	private readonly _eventEmitter: EventEmitter<ServiceHandlerEventTypes>;
+	
+	/**
+	* The subscription for tasks.
+	*/
 	private _tasksSubscription: ddpSubscription;
+	
+	/**
+	* The cache for storing tasks.
+	*/
 	private _taskCache = new Map<string, TaskEvent | TaskCommand>();
 
-	public get emitter(): EventEmitter<ServiceHandlerEventTypes>
-	{
+	/**
+	* Gets the event emitter for handling service handler events.
+	*/
+	public get emitter(): EventEmitter<ServiceHandlerEventTypes> {
 		return this._eventEmitter;
 	}
 
-	public get tenantId(): string
-	{
+	/**
+	* Gets the ID of the tenant.
+	*/
+	public get tenantId(): string {
 		return this._tenantId;
 	}
 
+	/**
+	* Creates a new instance of the ServiceHandler class.
+	* @param client - The client instance used for communication.
+	* @param ddpClient - The DDP client instance used for subscribing to tasks.
+	* @param tenantId - The ID of the tenant.
+	* @throws {Error} If the tenant ID is not provided.
+	*/
 	constructor(client: Client, ddpClient: DDPClient, _tenantId: string)
 	{
 		if(!_tenantId)
@@ -60,7 +97,7 @@ export class ServiceHandler
 		return true;
 	}
 
-	private init(): void
+	private async init(): Promise<void>
 	{
 		try
 		{
@@ -84,20 +121,43 @@ export class ServiceHandler
 				});
 
 				// Get the tasks that are new
-				const tasksToEmit = newTasks.reduce((acc, task) =>
+				const { tasksToEmit, commandsToRefuse, eventsToConfirm } = newTasks.reduce((acc, task) =>
 				{
 					if(!this._taskCache.has(task.id))
 					{
-						acc.push(task);
+						if(task instanceof TaskEvent && (!task.data.eventType || !eventTypes.includes(task.data.eventType as any)))
+						{
+							acc.eventsToConfirm.push(task);
+							return acc;
+						}
+
+						if(task instanceof TaskCommand && (!task.data.commandType || !commandTypes.includes(task.data.commandType as any)))
+						{
+							acc.commandsToRefuse.push(task);
+							return acc;
+						}
+
+						acc.tasksToEmit.push(task);
 						this._taskCache.set(task.id, task);
 					}
 
 					return acc;
-				}, [] as (TaskEvent | TaskCommand)[]);
+				}, { tasksToEmit: [] as (TaskEvent | TaskCommand)[], commandsToRefuse: [] as TaskCommand[], eventsToConfirm: [] as TaskEvent[] });
 
-				if(tasksToEmit.length === 0) return;
+				if(commandsToRefuse.length)
+				{
+					this.refuseTaskCommands(commandsToRefuse);
+				}
 
-				this._eventEmitter.emit('newTasks', tasksToEmit);
+				if(eventsToConfirm.length)
+				{
+					this.confirmTaskEvents(eventsToConfirm);
+				}
+
+				if(tasksToEmit.length)
+				{
+					this._eventEmitter.emit('newTasks', tasksToEmit);	
+				}
 			});
 		}
 		catch(error)
@@ -121,6 +181,11 @@ export class ServiceHandler
 		return typeof task === 'string' ? task : task.id;
 	}
 
+	private checkOptionalIdValidity(idData: IdOption): void
+	{
+		if(!idData.id && !idData.externalId) throw swipelimeError('id or externalId is required');
+	}
+
 	public async confirmTaskEvents(tasks: (TaskEvent | string)[]): Promise<boolean>
 	{
 		const taskIds = tasks.map((task) => this.getTaskIdFromTask(task));
@@ -138,6 +203,10 @@ export class ServiceHandler
 		return this._ddpClient.call<[string, string], boolean>(`api/v${this._client.apiVersion}/confirmTestCommand`, this._tenantId, this.getTaskIdFromTask(task));
 	}
 
+	/**
+	* Refusing multiple tasks.
+	* @param tasks - The tasks to refuse but it can also be the IDs of the tasks.
+	*/
 	public async refuseTaskCommands(tasks: (TaskCommand | string)[]): Promise<boolean>
 	{
 		const taskIds = tasks.map((task) => this.getTaskIdFromTask(task));
@@ -145,8 +214,51 @@ export class ServiceHandler
 		return this._ddpClient.call<[string, string[]], boolean>(`api/v${this._client.apiVersion}/refuseTaskCommand`, this._tenantId, taskIds);
 	}
 
+	/**
+	* If you are not able to complete the command then you can refuse it.
+	* @param task - The task to refuse but it can also be the ID of the task.
+	*/
 	public async refuseTaskCommand(task: TaskCommand | string): Promise<boolean>
 	{
 		return this.refuseTaskCommands([task]);
+	}
+
+	/**
+	* It marks the payment request as done for a specific table.
+	* @param tableIdData - The ID of the table.
+	* @returns A promise that resolves to true if it's successful.
+	* @throws {Error} If the table ID is not a valid ID or external ID.
+	*/
+	public async markPaymentDone(tableIdData: IdOption): Promise<boolean>
+	{
+		this.checkOptionalIdValidity(tableIdData)
+
+		return this._ddpClient.call<[string, IdOption, boolean], true>(`api/v${this._client.apiVersion}/markPaymentChanged`, this._tenantId, tableIdData, true);
+	}
+
+	/**
+	* It marks the payment request as cancelled for a specific table.
+	* @param tableIdData - The ID of the table.
+	* @returns A promise that resolves to true if it's successful.
+	* @throws {Error} If the table ID is not a valid ID or external ID.
+	*/
+	public async markPaymentCancelled(tableIdData: IdOption): Promise<boolean>
+	{
+		this.checkOptionalIdValidity(tableIdData)
+
+		return this._ddpClient.call<[string, IdOption, boolean], true>(`api/v${this._client.apiVersion}/markPaymentChanged`, this._tenantId, tableIdData, false);
+	}
+
+	/**
+	* Finish all table sessions on the table. Users will not be able to order anymore.
+	* @param tableIdData - The ID of the table.
+	* @returns A promise that resolves to true if it's successful.
+	* @throws {Error} If the table ID is not a valid ID or external ID.
+	*/
+	public async finishTable(tableIdData: IdOption): Promise<boolean>
+	{
+		this.checkOptionalIdValidity(tableIdData)
+
+		return this._ddpClient.call<[string, IdOption], true>(`api/v${this._client.apiVersion}/finishTable`, this._tenantId, tableIdData);
 	}
 }

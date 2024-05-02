@@ -6,21 +6,24 @@ import Task from './Task';
 import { ServiceHandler } from '../ServiceHandler';
 import {
 	TaskType,
-	TaskEventData
+	TaskEventDataList
 } from '../types';
 
 export default class TaskEvent extends Task
 {
-	public readonly data: TaskEventData;
+	public readonly data: TaskEventDataList;
 	public readonly taskType: TaskType = TaskType.event;
 
 	constructor(doc: any, serviceHandler: ServiceHandler)
 	{
 		super(doc, serviceHandler);
 
-		this.data = doc.data as TaskEventData;
+		this.data = doc.data as TaskEventDataList;
 	}
 
+	/**
+	* Confirms the task event.
+	*/
 	public async confirm(): Promise<boolean>
 	{
 		return this._serviceHandler.confirmTaskEvent(this);

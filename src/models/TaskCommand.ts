@@ -6,19 +6,19 @@ import Task from './Task';
 import { ServiceHandler } from '../ServiceHandler';
 import {
 	TaskType,
-	TaskCommandData
+	TaskCommandDataList
 } from '../types';
 
 export default class TaskCommand extends Task
 {
-	public readonly data: TaskCommandData;
+	public readonly data: TaskCommandDataList;
 	public readonly taskType: TaskType = TaskType.command;
 
 	constructor(doc: any, serviceHandler: ServiceHandler)
 	{
 		super(doc, serviceHandler);
 
-		this.data = doc.data as TaskCommandData;
+		this.data = doc.data as TaskCommandDataList;
 	}
 
 	public async refuse(): Promise<boolean>
