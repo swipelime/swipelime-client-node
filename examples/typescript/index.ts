@@ -1,6 +1,10 @@
 import { Client, TaskCommand, TaskEvent, Environment } from 'swipelime-client-node';
 import 'dotenv/config';
 
+process.on('unhandledRejection', (reason, p) => {
+	console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
+ }); 
+
 const username = process.env['SWIPELIME_USERNAME'];
 const password = process.env['SWIPELIME_PASSWORD'];
 const environment = process.env['SWIPELIME_ENVIRONMENT'] as Environment | undefined;
@@ -54,30 +58,9 @@ const client = new Client({ username, password }, { environment });
 						console.log('test event', task.data.eventData);
 						// Do any processing here if needed
 					}
-
-					if(task.data.eventType === 'customer-joined-table')
+					else
 					{
-						console.log('customer-joined-table event', JSON.stringify(task.data.eventData, null, 2));
-					}
-
-					if(task.data.eventType === 'order-items-added')
-					{
-						console.log('order-items-added event', JSON.stringify(task.data.eventData, null, 2));
-					}
-
-					if(task.data.eventType === 'order-items-cancelled')
-					{
-						console.log('order-items-cancelled event', JSON.stringify(task.data.eventData, null, 2));
-					}
-
-					if(task.data.eventType === 'order-items-confirmed')
-					{
-						console.log('order-items-confirmed event', JSON.stringify(task.data.eventData, null, 2));
-					}
-
-					if(task.data.eventType === 'payment-requested')
-					{
-						console.log('payment-requested event', JSON.stringify(task.data.eventData, null, 2));
+						console.log(JSON.stringify(task, null, 2));
 					}
 
 					// Need to confirm all events to prevent them from being sent again

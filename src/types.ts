@@ -56,6 +56,11 @@ export const allLanguages = [
  */
 export type AllLanguage = typeof allLanguages[number];
 
+export type LangType =
+{
+	[key in AllLanguage ]?: string;
+}
+
 /**
  * The authentication parameters.
  */
@@ -251,7 +256,10 @@ export const eventTypes = [
 	'order-items-confirmed',
 	'order-items-cancelled',
 	'payment-requested',
-	'payment-request-cancelled'
+	'payment-request-cancelled',
+	'universal-menu-elements-added',
+	'universal-menu-elements-updated',
+	'universal-menu-elements-removed'
 ] as const;
 
 /**
@@ -290,7 +298,7 @@ export interface CustomerJoinedTableEventData extends TaskEventDataBase {
 /**
  * The data for order items added, confirmed, or cancelled events.
  */
-export interface OrderItemsAddedEventData extends TaskEventDataBase {
+export interface OrderItemsChangedEventData extends TaskEventDataBase {
 	eventType: 'order-items-added' | 'order-items-confirmed' | 'order-items-cancelled';
 	eventData: OrderEventData;
 };
@@ -306,7 +314,59 @@ export interface PaymentRequestedEventData extends TaskEventDataBase {
 	};
 };
 
+export interface UniversalMenuElementsEventData extends TaskEventDataBase {
+	eventType: 'universal-menu-elements-added' | 'universal-menu-elements-updated' | 'universal-menu-elements-removed';
+	eventData: (UniversalMenuItem | UniversalMenuCategory)[];
+};
+
 /**
  * The list of task event data.
  */
-export type TaskEventDataList = TestEventData | CustomerJoinedTableEventData | OrderItemsAddedEventData | PaymentRequestedEventData;
+export type TaskEventDataList = TestEventData | CustomerJoinedTableEventData | OrderItemsChangedEventData | PaymentRequestedEventData | UniversalMenuElementsEventData;
+
+export type UniversalMenuItemData = {
+	id: string;
+	externalId?: string;
+	enabled: boolean;
+	label: LangType;
+	price: number;
+	description?: LangType;
+	longDescription?: LangType;
+	created: string;
+	updated: string;
+};
+
+export type UniversalMenuItem = {
+	type: 'item',
+	data: UniversalMenuItemData
+};
+
+export type UniversalMenuCategoryData = {
+	id: string;
+	externalId?: string;
+	enabled: boolean;
+	label: LangType;
+	created?: string;
+	updated?: string;
+};
+
+/**
+ * Represents a universal menu category.
+ */
+export type UniversalMenuCategory = {
+	type: 'category',
+	data: UniversalMenuCategoryData
+};
+
+/**
+ * Represents a native table.
+ */
+export type NativeTable = {
+	id: string,
+	accessCode: string,
+	externalId?: string,
+	label: LangType,
+	children: string[],
+	created: string,
+	updated: string
+};

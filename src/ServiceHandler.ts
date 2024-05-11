@@ -13,7 +13,12 @@ import {
 	TaskType,
 	eventTypes,
 	commandTypes,
-	IdOption
+	IdOption,
+	OrderEventData,
+	UniversalMenuItem,
+	UniversalMenuItemData,
+	UniversalMenuCategory,
+	NativeTable
 } from './types';
 
 import {
@@ -186,19 +191,19 @@ export class ServiceHandler
 		if(!idData.id && !idData.externalId) throw swipelimeError('id or externalId is required');
 	}
 
-	public async confirmTaskEvents(tasks: (TaskEvent | string)[]): Promise<boolean>
+	public confirmTaskEvents(tasks: (TaskEvent | string)[]): Promise<boolean>
 	{
 		const taskIds = tasks.map((task) => this.getTaskIdFromTask(task));
 
 		return this._ddpClient.call<[string, string[]], boolean>(`api/v${this._client.apiVersion}/markTasksAsProcessed`, this._tenantId, taskIds);
 	}
 
-	public async confirmTaskEvent(task: TaskEvent | string): Promise<boolean>
+	public confirmTaskEvent(task: TaskEvent | string): Promise<boolean>
 	{
 		return this.confirmTaskEvents([task]);
 	}
 
-	public async confirmTestCommand(task: (TaskEvent | TaskCommand) | string): Promise<boolean>
+	public confirmTestCommand(task: (TaskEvent | TaskCommand) | string): Promise<boolean>
 	{
 		return this._ddpClient.call<[string, string], boolean>(`api/v${this._client.apiVersion}/confirmTestCommand`, this._tenantId, this.getTaskIdFromTask(task));
 	}
@@ -207,7 +212,7 @@ export class ServiceHandler
 	* Refusing multiple tasks.
 	* @param tasks - The tasks to refuse but it can also be the IDs of the tasks.
 	*/
-	public async refuseTaskCommands(tasks: (TaskCommand | string)[]): Promise<boolean>
+	public refuseTaskCommands(tasks: (TaskCommand | string)[]): Promise<boolean>
 	{
 		const taskIds = tasks.map((task) => this.getTaskIdFromTask(task));
 
@@ -218,7 +223,7 @@ export class ServiceHandler
 	* If you are not able to complete the command then you can refuse it.
 	* @param task - The task to refuse but it can also be the ID of the task.
 	*/
-	public async refuseTaskCommand(task: TaskCommand | string): Promise<boolean>
+	public refuseTaskCommand(task: TaskCommand | string): Promise<boolean>
 	{
 		return this.refuseTaskCommands([task]);
 	}
@@ -229,11 +234,11 @@ export class ServiceHandler
 	* @returns A promise that resolves to true if it's successful.
 	* @throws {Error} If the table ID is not a valid ID or external ID.
 	*/
-	public async markPaymentDone(tableIdData: IdOption): Promise<boolean>
+	public markPaymentDone(tableIdData: IdOption): Promise<void>
 	{
-		this.checkOptionalIdValidity(tableIdData)
+		this.checkOptionalIdValidity(tableIdData);
 
-		return this._ddpClient.call<[string, IdOption, boolean], true>(`api/v${this._client.apiVersion}/markPaymentChanged`, this._tenantId, tableIdData, true);
+		return this._ddpClient.call<[string, IdOption, boolean], void>(`api/v${this._client.apiVersion}/markPaymentChanged`, this._tenantId, tableIdData, true);
 	}
 
 	/**
@@ -242,11 +247,11 @@ export class ServiceHandler
 	* @returns A promise that resolves to true if it's successful.
 	* @throws {Error} If the table ID is not a valid ID or external ID.
 	*/
-	public async markPaymentCancelled(tableIdData: IdOption): Promise<boolean>
+	public markPaymentCancelled(tableIdData: IdOption): Promise<void>
 	{
-		this.checkOptionalIdValidity(tableIdData)
+		this.checkOptionalIdValidity(tableIdData);
 
-		return this._ddpClient.call<[string, IdOption, boolean], true>(`api/v${this._client.apiVersion}/markPaymentChanged`, this._tenantId, tableIdData, false);
+		return this._ddpClient.call<[string, IdOption, boolean], void>(`api/v${this._client.apiVersion}/markPaymentChanged`, this._tenantId, tableIdData, false);
 	}
 
 	/**
@@ -255,10 +260,136 @@ export class ServiceHandler
 	* @returns A promise that resolves to true if it's successful.
 	* @throws {Error} If the table ID is not a valid ID or external ID.
 	*/
-	public async finishTable(tableIdData: IdOption): Promise<boolean>
+	public finishTable(tableIdData: IdOption): Promise<void>
 	{
-		this.checkOptionalIdValidity(tableIdData)
+		this.checkOptionalIdValidity(tableIdData);
 
-		return this._ddpClient.call<[string, IdOption], true>(`api/v${this._client.apiVersion}/finishTable`, this._tenantId, tableIdData);
+		return this._ddpClient.call<[string, IdOption], void>(`api/v${this._client.apiVersion}/finishTable`, this._tenantId, tableIdData);
+	}
+
+	/**
+	 * Retrieves the orders for a specific table.
+	 * 
+	 * @param tableIdData - The ID of the table.
+	 * @returns A promise that resolves to the order event data.
+	 */
+	public getOrders(tableIdData: IdOption): Promise<OrderEventData>
+	{
+		this.checkOptionalIdValidity(tableIdData);
+
+		return this._ddpClient.call<[string, IdOption], OrderEventData>(`api/v${this._client.apiVersion}/getOrders`, this._tenantId, tableIdData);
+	}
+
+	/**
+	 * Cancels the specified order items for a given table.
+	 * 
+	 * @param tableIdData - The ID of the table.
+	 * @param orderItemIds - An array of order item IDs to be cancelled.
+	 * @returns A Promise that resolves to void.
+	 */
+	public cancelOrderItems(tableIdData: IdOption, orderItemIds: string[]): Promise<void>
+	{
+		this.checkOptionalIdValidity(tableIdData);
+
+		if(!orderItemIds?.length) throw swipelimeError('cancelOrderItems method need valid orderItemIds');
+
+		return this._ddpClient.call<[string, string[]], void>(`api/v${this._client.apiVersion}/cancelOrderItems`, this._tenantId, orderItemIds);
+	}
+
+	/**
+	 * Retrieves the universal menu elements from the server.
+	 * 
+	 * @returns A promise that resolves to an array of UniversalMenuItem or UniversalMenuCategory objects.
+	 */
+	public getUniversalMenuElements(): Promise<(UniversalMenuItem | UniversalMenuCategory)[]>
+	{
+		return this._ddpClient.call<[string], (UniversalMenuItem | UniversalMenuCategory)[]>(`api/v${this._client.apiVersion}/getUniversalMenuElements`, this._tenantId);
+	}
+
+	/**
+	 * Retrieves the universal menu items.
+	 * @returns A promise that resolves to an array of UniversalMenuItem objects.
+	 */
+	public getUniversalMenuItems(): Promise<UniversalMenuItem[]>
+	{
+		return this._ddpClient.call<[string], UniversalMenuItem[]>(`api/v${this._client.apiVersion}/getUniversalMenuElements`, this._tenantId);
+	}
+
+	/**
+	 * Retrieves the universal menu categories.
+	 * @returns A promise that resolves to an array of UniversalMenuCategory objects.
+	 */
+	public getUniversalMenuCategories(): Promise<UniversalMenuCategory[]>
+	{
+		return this._ddpClient.call<[string], UniversalMenuCategory[]>(`api/v${this._client.apiVersion}/getUniversalMenuElements`, this._tenantId);
+	}
+
+	/**
+	 * Retrieves the tables from the server.
+	 * @returns A promise that resolves to an array of NativeTable objects.
+	 */
+	public getTables(): Promise<NativeTable[]>
+	{
+		return this._ddpClient.call<[string], NativeTable[]>(`api/v${this._client.apiVersion}/getTables`, this._tenantId);
+	}
+
+	/**
+	 * Retrieves a table based on the provided table ID.
+	 * @param tableIdData - The ID of the table.
+	 * @returns A promise that resolves to the retrieved NativeTable object.
+	 */
+	public async getTable(tableIdData: IdOption): Promise<NativeTable>
+	{
+		this.checkOptionalIdValidity(tableIdData);
+
+		if(tableIdData.id)
+		{
+			return (await this._ddpClient.call<[string, string[]], NativeTable[]>(`api/v${this._client.apiVersion}/getTables`, this._tenantId, [tableIdData.id]))?.[0];
+		}
+
+		return (await this._ddpClient.call<[string, string[]], NativeTable[]>(`api/v${this._client.apiVersion}/getTablesByExternalIds`, this._tenantId, [tableIdData.externalId as string]))?.[0];
+	}
+
+	/**
+	 * Deletes menu elements by their IDs.
+	 * @param ids - An array of IdOption objects representing the IDs of the menu elements to delete.
+	 * @returns A Promise that resolves to the number of menu elements deleted.
+	 */
+	public async deleteMenuElementsByIds(ids: IdOption[]): Promise<number>
+	{
+		if(!ids?.length) throw swipelimeError('deleteMenuElementsByIds method need valid ids');
+
+		const nativeIds = ids.filter(idData => idData.id).map(idData => idData.id as string);
+
+		const externalIds = ids.filter(idData => idData.externalId).map(idData => idData.externalId as string);
+
+		if(!nativeIds.length && !externalIds.length) throw swipelimeError('deleteMenuElementsByIds method need valid ids');
+
+		let deleted = 0;
+
+		if(nativeIds.length)
+		{
+			deleted += await this._ddpClient.call<[string, string[]], number>(`api/v${this._client.apiVersion}/deleteMenuElementsByIds`, this._tenantId, nativeIds);
+		}
+
+		if(nativeIds.length)
+		{
+			deleted += await this._ddpClient.call<[string, string[]], number>(`api/v${this._client.apiVersion}/deleteMenuElementsByIds`, this._tenantId, nativeIds);
+		}
+
+		return deleted;
+	}
+
+	/**
+	 * Upserts universal menu items.
+	 * 
+	 * @param universalMenuItemsData - An array of partial UniversalMenuItemData objects.
+	 * @returns A promise that resolves to an object containing the number of items updated and the number of new items.
+	 */
+	public upsertUniversalMenuItems(universalMenuItemsData: Partial<UniversalMenuItemData>[]): Promise<{ updated: number, new: number }>
+	{
+		if(!universalMenuItemsData?.length) throw swipelimeError('upsertUniversalMenuItems method need valid universalMenuItems');
+
+		return this._ddpClient.call<[string, Partial<UniversalMenuItemData>[]], { updated: number, new: number }>(`api/v${this._client.apiVersion}/upsertUniversalMenuItems`, this._tenantId, universalMenuItemsData);
 	}
 }
