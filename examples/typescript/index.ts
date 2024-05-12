@@ -60,7 +60,7 @@ const client = new Client({ username, password }, { environment });
 					}
 					else
 					{
-						console.log(JSON.stringify(task, null, 2));
+						console.log(JSON.stringify(task.data, null, 2));
 					}
 
 					// Need to confirm all events to prevent them from being sent again

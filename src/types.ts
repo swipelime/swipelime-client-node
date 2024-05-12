@@ -163,16 +163,16 @@ export enum PaymentTypes {
 /**
  * The general ID data for an entity.
  */
-export type IdData = {
+export type ElementIdData = {
 	id: string;
-	externalIds: Record<string, string>;
+	externalId?: string;
 };
 
 /**
  * The options for specifying an ID.
  * You can either use the ID or the external ID but at least one must be specified.
  */
-export type IdOption = { id?: string; externalId?: string };
+export type DataIdType = { id?: string; externalId?: string };
 
 /**
  * The data for an incoming task.
@@ -227,13 +227,13 @@ export type TaskCommandDataList = TaskCommandData;
 /**
  * The data for order items.
  */
-export type OrderItemsEventData = {
+export type OrderItemsData = {
 	orderItemId: string;
 	customerId: string;
-	menuItemData: IdData;
-	menuData?: IdData;
-	variantData?: IdData;
-	selectablesData?: IdData[];
+	menuItemData: ElementIdData;
+	menuData?: ElementIdData;
+	variantData?: ElementIdData;
+	selectablesData?: ElementIdData[];
 	quantity: number;
 	additionalRequests?: string;
 };
@@ -242,8 +242,8 @@ export type OrderItemsEventData = {
  * The data for an order.
  */
 export type OrderEventData = {
-	tableData: IdData;
-	orderItems: OrderItemsEventData[];
+	tableData: ElementIdData;
+	orderItems: OrderItemsData[];
 };
 
 /**
@@ -309,7 +309,7 @@ export interface OrderItemsChangedEventData extends TaskEventDataBase {
 export interface PaymentRequestedEventData extends TaskEventDataBase {
 	eventType: 'payment-requested';
 	eventData: {
-		tableData: IdData;
+		tableData: ElementIdData;
 		paymentType: typeof PaymentTypes;
 	};
 };
@@ -363,10 +363,16 @@ export type UniversalMenuCategory = {
  */
 export type NativeTable = {
 	id: string,
-	accessCode: string,
 	externalId?: string,
+	accessCode: string,
 	label: LangType,
 	children: string[],
 	created: string,
 	updated: string
+};
+
+export type CustomOrderItem = {
+	label: LangType,
+	price: number,
+	quantity: number
 };

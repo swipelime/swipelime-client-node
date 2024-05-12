@@ -21,7 +21,7 @@ export default class TaskCommand extends Task
 		this.data = doc.data as TaskCommandDataList;
 	}
 
-	public async refuse(): Promise<boolean>
+	public async refuse(): Promise<void>
 	{
 		return this._serviceHandler.refuseTaskCommand(this);
 	}

@@ -24,7 +24,7 @@ export default class TaskEvent extends Task
 	/**
 	* Confirms the task event.
 	*/
-	public async confirm(): Promise<boolean>
+	public async confirm(): Promise<void>
 	{
 		return this._serviceHandler.confirmTaskEvent(this);
 	}

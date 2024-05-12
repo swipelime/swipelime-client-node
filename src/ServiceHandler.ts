@@ -13,12 +13,13 @@ import {
 	TaskType,
 	eventTypes,
 	commandTypes,
-	IdOption,
-	OrderEventData,
+	DataIdType,
+	OrderItemsData,
 	UniversalMenuItem,
 	UniversalMenuItemData,
 	UniversalMenuCategory,
-	NativeTable
+	NativeTable,
+	CustomOrderItem
 } from './types';
 
 import {
@@ -186,85 +187,94 @@ export class ServiceHandler
 		return typeof task === 'string' ? task : task.id;
 	}
 
-	private checkOptionalIdValidity(idData: IdOption): void
+	private checkOptionalIdValidity(idData: DataIdType): void
 	{
 		if(!idData.id && !idData.externalId) throw swipelimeError('id or externalId is required');
 	}
 
-	public confirmTaskEvents(tasks: (TaskEvent | string)[]): Promise<boolean>
+	public confirmTaskEvents(tasks: (TaskEvent | string)[]): Promise<void>
 	{
 		const taskIds = tasks.map((task) => this.getTaskIdFromTask(task));
 
-		return this._ddpClient.call<[string, string[]], boolean>(`api/v${this._client.apiVersion}/markTasksAsProcessed`, this._tenantId, taskIds);
+		return this._ddpClient.call<[string, string[]], void>(`api/v${this._client.apiVersion}/markTasksAsProcessed`, this._tenantId, taskIds);
 	}
 
-	public confirmTaskEvent(task: TaskEvent | string): Promise<boolean>
+	public confirmTaskEvent(task: TaskEvent | string): Promise<void>
 	{
 		return this.confirmTaskEvents([task]);
 	}
 
-	public confirmTestCommand(task: (TaskEvent | TaskCommand) | string): Promise<boolean>
+	/**
+	 * Confirms a test command.
+	 * The test command can be fired from the test suite in the integration settings in swipelime. When the test command received, this method has to be called to confirm it. It's for testing purposes only.
+	 * 
+	 * @param task - The task event, task command, or task ID.
+	 */
+	public confirmTestCommand(task: (TaskEvent | TaskCommand) | string): Promise<void>
 	{
-		return this._ddpClient.call<[string, string], boolean>(`api/v${this._client.apiVersion}/confirmTestCommand`, this._tenantId, this.getTaskIdFromTask(task));
+		return this._ddpClient.call<[string, string], void>(`api/v${this._client.apiVersion}/confirmTestCommand`, this._tenantId, this.getTaskIdFromTask(task));
 	}
 
 	/**
 	* Refusing multiple tasks.
 	* @param tasks - The tasks to refuse but it can also be the IDs of the tasks.
 	*/
-	public refuseTaskCommands(tasks: (TaskCommand | string)[]): Promise<boolean>
+	public refuseTaskCommands(tasks: (TaskCommand | string)[]): Promise<void>
 	{
 		const taskIds = tasks.map((task) => this.getTaskIdFromTask(task));
 
-		return this._ddpClient.call<[string, string[]], boolean>(`api/v${this._client.apiVersion}/refuseTaskCommand`, this._tenantId, taskIds);
+		return this._ddpClient.call<[string, string[]], void>(`api/v${this._client.apiVersion}/refuseTaskCommand`, this._tenantId, taskIds);
 	}
 
 	/**
 	* If you are not able to complete the command then you can refuse it.
 	* @param task - The task to refuse but it can also be the ID of the task.
 	*/
-	public refuseTaskCommand(task: TaskCommand | string): Promise<boolean>
+	public refuseTaskCommand(task: TaskCommand | string): Promise<void>
 	{
 		return this.refuseTaskCommands([task]);
 	}
 
 	/**
 	* It marks the payment request as done for a specific table.
+	* When the payment is done for a table this method has to be called so our system can reflect to that.
 	* @param tableIdData - The ID of the table.
 	* @returns A promise that resolves to true if it's successful.
 	* @throws {Error} If the table ID is not a valid ID or external ID.
 	*/
-	public markPaymentDone(tableIdData: IdOption): Promise<void>
+	public markPaymentDone(tableIdData: DataIdType): Promise<void>
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
-		return this._ddpClient.call<[string, IdOption, boolean], void>(`api/v${this._client.apiVersion}/markPaymentChanged`, this._tenantId, tableIdData, true);
+		return this._ddpClient.call<[string, DataIdType, boolean], void>(`api/v${this._client.apiVersion}/markPaymentChanged`, this._tenantId, tableIdData, true);
 	}
 
 	/**
 	* It marks the payment request as cancelled for a specific table.
+	* When the payment is cancelled for a table this method has to be called so our system can reflect to that.
 	* @param tableIdData - The ID of the table.
 	* @returns A promise that resolves to true if it's successful.
 	* @throws {Error} If the table ID is not a valid ID or external ID.
 	*/
-	public markPaymentCancelled(tableIdData: IdOption): Promise<void>
+	public markPaymentCancelled(tableIdData: DataIdType): Promise<void>
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
-		return this._ddpClient.call<[string, IdOption, boolean], void>(`api/v${this._client.apiVersion}/markPaymentChanged`, this._tenantId, tableIdData, false);
+		return this._ddpClient.call<[string, DataIdType, boolean], void>(`api/v${this._client.apiVersion}/markPaymentChanged`, this._tenantId, tableIdData, false);
 	}
 
 	/**
 	* Finish all table sessions on the table. Users will not be able to order anymore.
+	* When customers are leaving this method should be called to finish the table and lock their session so no more order can be made.
 	* @param tableIdData - The ID of the table.
 	* @returns A promise that resolves to true if it's successful.
 	* @throws {Error} If the table ID is not a valid ID or external ID.
 	*/
-	public finishTable(tableIdData: IdOption): Promise<void>
+	public finishTable(tableIdData: DataIdType): Promise<void>
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
-		return this._ddpClient.call<[string, IdOption], void>(`api/v${this._client.apiVersion}/finishTable`, this._tenantId, tableIdData);
+		return this._ddpClient.call<[string, DataIdType], void>(`api/v${this._client.apiVersion}/finishTable`, this._tenantId, tableIdData);
 	}
 
 	/**
@@ -273,11 +283,11 @@ export class ServiceHandler
 	 * @param tableIdData - The ID of the table.
 	 * @returns A promise that resolves to the order event data.
 	 */
-	public getOrders(tableIdData: IdOption): Promise<OrderEventData>
+	public getOrders(tableIdData: DataIdType): Promise<OrderItemsData[]>
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
-		return this._ddpClient.call<[string, IdOption], OrderEventData>(`api/v${this._client.apiVersion}/getOrders`, this._tenantId, tableIdData);
+		return this._ddpClient.call<[string, DataIdType], OrderItemsData[]>(`api/v${this._client.apiVersion}/getOrders`, this._tenantId, tableIdData);
 	}
 
 	/**
@@ -287,7 +297,7 @@ export class ServiceHandler
 	 * @param orderItemIds - An array of order item IDs to be cancelled.
 	 * @returns A Promise that resolves to void.
 	 */
-	public cancelOrderItems(tableIdData: IdOption, orderItemIds: string[]): Promise<void>
+	public cancelOrderItems(tableIdData: DataIdType, orderItemIds: string[]): Promise<void>
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
@@ -325,7 +335,7 @@ export class ServiceHandler
 	}
 
 	/**
-	 * Retrieves the tables from the server.
+	 * Retrieves all tables.
 	 * @returns A promise that resolves to an array of NativeTable objects.
 	 */
 	public getTables(): Promise<NativeTable[]>
@@ -338,46 +348,23 @@ export class ServiceHandler
 	 * @param tableIdData - The ID of the table.
 	 * @returns A promise that resolves to the retrieved NativeTable object.
 	 */
-	public async getTable(tableIdData: IdOption): Promise<NativeTable>
+	public async getTable(tableIdData: DataIdType): Promise<NativeTable | undefined>
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
-		if(tableIdData.id)
-		{
-			return (await this._ddpClient.call<[string, string[]], NativeTable[]>(`api/v${this._client.apiVersion}/getTables`, this._tenantId, [tableIdData.id]))?.[0];
-		}
-
-		return (await this._ddpClient.call<[string, string[]], NativeTable[]>(`api/v${this._client.apiVersion}/getTablesByExternalIds`, this._tenantId, [tableIdData.externalId as string]))?.[0];
+		return (await this._ddpClient.call<[string, DataIdType[]], NativeTable[]>(`api/v${this._client.apiVersion}/getTables`, this._tenantId, [tableIdData]))[0];
 	}
 
 	/**
-	 * Deletes menu elements by their IDs.
+	 * Deletes menu elements (eg. items, categories) by their IDs.
 	 * @param ids - An array of IdOption objects representing the IDs of the menu elements to delete.
 	 * @returns A Promise that resolves to the number of menu elements deleted.
 	 */
-	public async deleteMenuElementsByIds(ids: IdOption[]): Promise<number>
+	public deleteMenuElements(ids: DataIdType[]): Promise<number>
 	{
 		if(!ids?.length) throw swipelimeError('deleteMenuElementsByIds method need valid ids');
 
-		const nativeIds = ids.filter(idData => idData.id).map(idData => idData.id as string);
-
-		const externalIds = ids.filter(idData => idData.externalId).map(idData => idData.externalId as string);
-
-		if(!nativeIds.length && !externalIds.length) throw swipelimeError('deleteMenuElementsByIds method need valid ids');
-
-		let deleted = 0;
-
-		if(nativeIds.length)
-		{
-			deleted += await this._ddpClient.call<[string, string[]], number>(`api/v${this._client.apiVersion}/deleteMenuElementsByIds`, this._tenantId, nativeIds);
-		}
-
-		if(nativeIds.length)
-		{
-			deleted += await this._ddpClient.call<[string, string[]], number>(`api/v${this._client.apiVersion}/deleteMenuElementsByIds`, this._tenantId, nativeIds);
-		}
-
-		return deleted;
+		 return this._ddpClient.call<[string, DataIdType[]], number>(`api/v${this._client.apiVersion}/deleteMenuElementsByIds`, this._tenantId, ids);
 	}
 
 	/**
@@ -391,5 +378,12 @@ export class ServiceHandler
 		if(!universalMenuItemsData?.length) throw swipelimeError('upsertUniversalMenuItems method need valid universalMenuItems');
 
 		return this._ddpClient.call<[string, Partial<UniversalMenuItemData>[]], { updated: number, new: number }>(`api/v${this._client.apiVersion}/upsertUniversalMenuItems`, this._tenantId, universalMenuItemsData);
+	}
+
+	public addCustomOrderItem(tableIdData: DataIdType, customOrderItem: CustomOrderItem): Promise<void>
+	{
+		this.checkOptionalIdValidity(tableIdData);
+
+		return this._ddpClient.call<[string, DataIdType, CustomOrderItem], void>(`api/v${this._client.apiVersion}/addCustomOrderItem`, this._tenantId, tableIdData, customOrderItem);
 	}
 }
