@@ -278,16 +278,16 @@ export class ServiceHandler
 	}
 
 	/**
-	 * Retrieves the orders for a specific table.
+	 * Retrieves the ordered items for a specific table.
 	 * 
 	 * @param tableIdData - The ID of the table.
 	 * @returns A promise that resolves to the order event data.
 	 */
-	public getOrders(tableIdData: DataIdType): Promise<OrderItemsData[]>
+	public getOrderItems(tableIdData: DataIdType): Promise<OrderItemsData[]>
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
-		return this._ddpClient.call<[string, DataIdType], OrderItemsData[]>(`api/v${this._client.apiVersion}/getOrders`, this._tenantId, tableIdData);
+		return this._ddpClient.call<[string, DataIdType], OrderItemsData[]>(`api/v${this._client.apiVersion}/getOrderItems`, this._tenantId, tableIdData);
 	}
 
 	/**
