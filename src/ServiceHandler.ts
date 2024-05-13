@@ -380,6 +380,11 @@ export class ServiceHandler
 		return this._ddpClient.call<[string, Partial<UniversalMenuItemData>[]], { updated: number, new: number }>(`api/v${this._client.apiVersion}/upsertUniversalMenuItems`, this._tenantId, universalMenuItemsData);
 	}
 
+	/**
+	 * Adds a custom order item to the table. It only requires a label (which can be from any language) a quantity and a price.
+	 * @param tableIdData - The ID of the table where the custom order item will be added.
+	 * @param customOrderItem - The custom order item to be added.
+	 */
 	public addCustomOrderItem(tableIdData: DataIdType, customOrderItem: CustomOrderItem): Promise<void>
 	{
 		this.checkOptionalIdValidity(tableIdData);
