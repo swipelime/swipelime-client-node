@@ -322,7 +322,7 @@ export class ServiceHandler
 	 */
 	public getUniversalMenuItems(): Promise<UniversalMenuItem[]>
 	{
-		return this._ddpClient.call<[string], UniversalMenuItem[]>(`api/v${this._client.apiVersion}/getUniversalMenuElements`, this._tenantId);
+		return this._ddpClient.call<[string, 'item' | 'category' | undefined], UniversalMenuItem[]>(`api/v${this._client.apiVersion}/getUniversalMenuElements`, this._tenantId, 'item');
 	}
 
 	/**
@@ -331,7 +331,7 @@ export class ServiceHandler
 	 */
 	public getUniversalMenuCategories(): Promise<UniversalMenuCategory[]>
 	{
-		return this._ddpClient.call<[string], UniversalMenuCategory[]>(`api/v${this._client.apiVersion}/getUniversalMenuElements`, this._tenantId);
+		return this._ddpClient.call<[string, 'item' | 'category' | undefined], UniversalMenuCategory[]>(`api/v${this._client.apiVersion}/getUniversalMenuElements`, this._tenantId, 'category');
 	}
 
 	/**
