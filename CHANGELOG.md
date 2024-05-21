@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2024-05-21
+### Added
+* Added new swipelime events: tables-added, tables-updated, tables-removed.
+* Added new service handler methods: upsertTables, deleteTables.
+* Added version check to prevent using old clients.
+### Fixed
+* Fixed upsertUniversalMenuItems method's return type
+
 ## [0.2.3] - 2024-05-15
 ### Fixed
 * Fix getUniversalMenuItems and getUniversalMenuCategories methods to get the correct menu elements

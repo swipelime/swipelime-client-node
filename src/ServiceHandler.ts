@@ -19,7 +19,9 @@ import {
 	UniversalMenuItemData,
 	UniversalMenuCategory,
 	NativeTable,
-	CustomOrderItem
+	CustomOrderItem,
+	UpsertUniversalMenuItemsReturn,
+	UpsertTablesReturn
 } from './types';
 
 import {
@@ -356,6 +358,34 @@ export class ServiceHandler
 	}
 
 	/**
+	 * Upserts universal menu items.
+	 * 
+	 * @param universalMenuItemsData - An array of partial UniversalMenuItemData objects.
+	 * @param commandId - You can pass in the command id if this was a command from swipelime.
+	 * @returns A promise that resolves to an object containing the number of items updated and the number of new items.
+	 */
+	public upsertUniversalMenuItems(universalMenuItemsData: Partial<UniversalMenuItemData>[], commandId?: string): Promise<UpsertUniversalMenuItemsReturn>
+	{
+		if(!universalMenuItemsData?.length) throw swipelimeError('upsertUniversalMenuItems method need valid universalMenuItemsData');
+
+		return this._ddpClient.call<[string, Partial<UniversalMenuItemData>[], string | undefined], UpsertUniversalMenuItemsReturn>(`api/v${this._client.apiVersion}/upsertUniversalMenuItems`, this._tenantId, universalMenuItemsData, commandId);
+	}
+
+	/**
+	 * Upserts tables.
+	 * 
+	 * @param tableData - An array of partial NativeTable objects.
+	 * @param commandId - You can pass in the command id if this was a command from swipelime.
+	 * @returns A promise that resolves to an object containing the number of tables updated and the number of new items.
+	 */
+	public upsertTables(tableData: Partial<NativeTable>[], commandId?: string): Promise<UpsertTablesReturn>
+	{
+		if(!tableData?.length) throw swipelimeError('upsertUniversalMenuItems method need valid tableData');
+
+		return this._ddpClient.call<[string, Partial<UniversalMenuItemData>[], string | undefined], UpsertTablesReturn>(`api/v${this._client.apiVersion}/upsertTables`, this._tenantId, tableData, commandId);
+	}
+
+	/**
 	 * Deletes menu elements (eg. items, categories) by their IDs.
 	 * @param ids - An array of IdOption objects representing the IDs of the menu elements to delete.
 	 * @returns A Promise that resolves to the number of menu elements deleted.
@@ -368,16 +398,15 @@ export class ServiceHandler
 	}
 
 	/**
-	 * Upserts universal menu items.
-	 * 
-	 * @param universalMenuItemsData - An array of partial UniversalMenuItemData objects.
-	 * @returns A promise that resolves to an object containing the number of items updated and the number of new items.
+	 * Deletes tables by their IDs.
+	 * @param ids - An array of IdOption objects representing the IDs of the tables to delete.
+	 * @returns A Promise that resolves to the number of tables deleted.
 	 */
-	public upsertUniversalMenuItems(universalMenuItemsData: Partial<UniversalMenuItemData>[]): Promise<{ updated: number, new: number }>
+	public deleteTables(ids: DataIdType[]): Promise<number>
 	{
-		if(!universalMenuItemsData?.length) throw swipelimeError('upsertUniversalMenuItems method need valid universalMenuItems');
+		if(!ids?.length) throw swipelimeError('deleteMenuElementsByIds method need valid ids');
 
-		return this._ddpClient.call<[string, Partial<UniversalMenuItemData>[]], { updated: number, new: number }>(`api/v${this._client.apiVersion}/upsertUniversalMenuItems`, this._tenantId, universalMenuItemsData);
+		 return this._ddpClient.call<[string, DataIdType[]], number>(`api/v${this._client.apiVersion}/deleteTables`, this._tenantId, ids);
 	}
 
 	/**

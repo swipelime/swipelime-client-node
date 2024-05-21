@@ -259,7 +259,10 @@ export const eventTypes = [
 	'payment-request-cancelled',
 	'universal-menu-elements-added',
 	'universal-menu-elements-updated',
-	'universal-menu-elements-removed'
+	'universal-menu-elements-removed',
+	'tables-added',
+	'tables-updated',
+	'tables-removed'
 ] as const;
 
 /**
@@ -319,10 +322,15 @@ export interface UniversalMenuElementsEventData extends TaskEventDataBase {
 	eventData: (UniversalMenuItem | UniversalMenuCategory)[];
 };
 
+export interface TablesEventData extends TaskEventDataBase {
+	eventType: 'tables-added' | 'tables-updated' | 'tables-removed';
+	eventData: NativeTable[];
+};
+
 /**
  * The list of task event data.
  */
-export type TaskEventDataList = TestEventData | CustomerJoinedTableEventData | OrderItemsChangedEventData | PaymentRequestedEventData | UniversalMenuElementsEventData;
+export type TaskEventDataList = TestEventData | CustomerJoinedTableEventData | OrderItemsChangedEventData | PaymentRequestedEventData | UniversalMenuElementsEventData | TablesEventData;
 
 export type UniversalMenuItemData = {
 	id: string;
@@ -366,7 +374,6 @@ export type NativeTable = {
 	externalId?: string,
 	accessCode: string,
 	label: LangType,
-	children: string[],
 	created: string,
 	updated: string
 };
@@ -375,4 +382,26 @@ export type CustomOrderItem = {
 	label: LangType,
 	price: number,
 	quantity: number
+};
+
+export type UpsertUniversalMenuItemsReturn = {
+	updated: number,
+	new: number,
+	noChanges: number,
+	failed?: number,
+	failedItems?: {
+		error: string,
+		item: Partial<UniversalMenuItemData>
+	}[]
+};
+
+export type UpsertTablesReturn = {
+	updated: number,
+	new: number,
+	noChanges: number,
+	failed?: number,
+	failedTables?: {
+		error: string,
+		table: Partial<NativeTable>
+	}[]
 };

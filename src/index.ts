@@ -35,6 +35,7 @@ export class Client
 	private _isConnected = false;
 	private _serviceHandlers: ServiceHandler[] = [];
 	public readonly apiVersion = 1;
+	public readonly clientVersion = '0.2.4';
 
 	public get isLoggedIn(): boolean
 	{
@@ -85,9 +86,16 @@ export class Client
 
 		this._isInitialized = true;
 
-		this._ddpClient.on('connected', () =>
+		this._ddpClient.on('connected', async () =>
 		{
 			this._isConnected = true;
+
+			if(!(await this._ddpClient.call<[string], boolean>(`api/v${this.apiVersion}/isVersionValid`, this.clientVersion)))
+			{
+				this._eventEmitter.emit('error', swipelimeError('Client version is not supported'));
+				this._ddpClient.disconnect();
+				return;
+			}
 
 			this._eventEmitter.emit('connected');
 
