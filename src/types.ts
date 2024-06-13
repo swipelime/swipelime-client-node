@@ -255,6 +255,7 @@ export const eventTypes = [
 	'order-items-added',
 	'order-items-confirmed',
 	'order-items-cancelled',
+	'order-items-changed',
 	'payment-requested',
 	'payment-request-cancelled',
 	'universal-menu-elements-added',
@@ -299,10 +300,10 @@ export interface CustomerJoinedTableEventData extends TaskEventDataBase {
 };
 
 /**
- * The data for order items added, confirmed, or cancelled events.
+ * The data for order items added, confirmed, cancelled or changed events.
  */
 export interface OrderItemsChangedEventData extends TaskEventDataBase {
-	eventType: 'order-items-added' | 'order-items-confirmed' | 'order-items-cancelled';
+	eventType: 'order-items-added' | 'order-items-confirmed' | 'order-items-cancelled' | 'order-items-changed';
 	eventData: OrderEventData;
 };
 

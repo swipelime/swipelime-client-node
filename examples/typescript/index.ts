@@ -45,6 +45,12 @@ const client = new Client({ username, password }, { environment });
 		// Register a service handler for one of the available tenants
 		const serviceHandler = await client.addServiceHandler({ tenantId });
 
+		console.log(await serviceHandler.upsertTables([
+			{
+				label: { en: 'Mayonnaise sauce' }
+			}
+		]));
+
 		// Listen for new tasks and process them
 		serviceHandler.emitter.on('newTasks', (tasks) =>
 		{
