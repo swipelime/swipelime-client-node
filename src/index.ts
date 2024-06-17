@@ -66,6 +66,8 @@ export class Client
 
 		this._eventEmitter = new EventEmitter<ClientEventTypes>();
 
+		this._eventEmitter.setMaxListeners(100);
+
 		this._authParams = authParams;
 
 		const ddpOptions: SimpleDDPConnectOptions =
