@@ -35,7 +35,7 @@ export class Client
 	private _isConnected = false;
 	private _serviceHandlers: ServiceHandler[] = [];
 	public readonly apiVersion = 1;
-	public readonly clientVersion = '0.2.6';
+	public readonly clientVersion = '0.2.7';
 
 	public get isLoggedIn(): boolean
 	{
