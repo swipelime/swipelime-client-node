@@ -1,7 +1,7 @@
 {
 	"name": "swipelime-client-node",
 	"description": "swipelime-client-node is the official swipelime Node.js client library",
-	"version": "0.2.7",
+	"version": "0.2.8",
 	"author": "swipelime (https://swipelime.com)",
 	"license": "MIT",
 	"repository": {

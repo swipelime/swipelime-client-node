@@ -234,6 +234,7 @@ export type OrderItemsData = {
 	menuData?: ElementIdData;
 	variantData?: ElementIdData;
 	selectablesData?: ElementIdData[];
+	status: 'added' | 'pending' | 'confirmed' | 'cancelled' | 'unknown'
 	quantity: number;
 	additionalRequests?: string;
 };
@@ -256,6 +257,7 @@ export const eventTypes = [
 	'order-items-confirmed',
 	'order-items-cancelled',
 	'order-items-changed',
+	'order-items-moved',
 	'payment-requested',
 	'payment-request-cancelled',
 	'universal-menu-elements-added',
@@ -305,6 +307,19 @@ export interface CustomerJoinedTableEventData extends TaskEventDataBase {
 export interface OrderItemsChangedEventData extends TaskEventDataBase {
 	eventType: 'order-items-added' | 'order-items-confirmed' | 'order-items-cancelled' | 'order-items-changed';
 	eventData: OrderEventData;
+};
+
+
+/**
+ * The data for order items moved event.
+ */
+export interface OrderItemsMovedEventData extends TaskEventDataBase {
+	eventType: 'order-items-moved';
+	eventData: {
+		fromTableData: ElementIdData;
+		toTableData: ElementIdData;
+		orderItems: OrderItemsData[];
+	};
 };
 
 /**
