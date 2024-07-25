@@ -181,7 +181,7 @@ export type IncomingTaskData = {
 	_id: string;
 	taskType: TaskType;
 	status: TaskStatus;
-	data: TaskEventDataList | TaskCommandData;
+	data: TaskEventDataList | TaskCommandDataList;
 	dateCreated: Date;
 	dateLastRun: Date | undefined;
 	retries: number | undefined;
@@ -190,19 +190,12 @@ export type IncomingTaskData = {
 /**
  * The available command types.
  */
-export const commandTypes = ['test'] as const;
+export const commandTypes = ['test', 'confirm-universal-menu-elements'] as const;
 
 /**
  * The types of commands.
  */
-export type CommandTypes = typeof eventTypes[number];
-
-/**
- * The data for a task command.
- */
-export type TaskCommandData = {
-	commandType: CommandTypes;
-};
+export type CommandTypes = typeof commandTypes[number];
 
 /**
  * The base data for a task command.
@@ -210,19 +203,31 @@ export type TaskCommandData = {
 export type TaskCommandDataBase = {
 	commandType: CommandTypes;
 	commandData?: Record<string, any>;
+	timestamp: string;
 };
 
 /**
  * The data for a test command.
  */
 export interface TestCommandData extends TaskCommandDataBase {
-	eventType: 'test';
+	commandType: 'test';
+};
+
+/**
+ * The data for confirm universal menu elements command.
+ */
+export interface ConfirmUniversalMenuElementsCommandData extends TaskCommandDataBase {
+	commandType: 'confirm-universal-menu-elements';
+	commandData: {
+		elements: ElementIdData[];
+		tableSessionId?: string;
+	};
 };
 
 /**
  * The list of task command data.
  */
-export type TaskCommandDataList = TaskCommandData;
+export type TaskCommandDataList = TestCommandData | ConfirmUniversalMenuElementsCommandData;
 
 /**
  * The data for order items.
@@ -279,6 +284,7 @@ export type EventTypes = typeof eventTypes[number];
 export type TaskEventDataBase = {
 	eventType: EventTypes;
 	eventData: Record<string, any>;
+	timestamp: string;
 };
 
 /**

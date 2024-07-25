@@ -212,7 +212,7 @@ export class ServiceHandler
 	 * 
 	 * @param task - The task event, task command, or task ID.
 	 */
-	public confirmTestCommand(task: (TaskEvent | TaskCommand) | string): Promise<void>
+	public confirmTestCommand(task: TaskCommand | string): Promise<void>
 	{
 		return this._ddpClient.call<[string, string], void>(`api/v${this._client.apiVersion}/confirmTestCommand`, this._tenantId, this.getTaskIdFromTask(task));
 	}
@@ -419,5 +419,16 @@ export class ServiceHandler
 		this.checkOptionalIdValidity(tableIdData);
 
 		return this._ddpClient.call<[string, DataIdType, CustomOrderItem], void>(`api/v${this._client.apiVersion}/addCustomOrderItem`, this._tenantId, tableIdData, customOrderItem);
+	}
+
+	/**
+	 * Confirms a confirm universal menu elements command.
+	 * This command is fired when swipelime needs a confirmation that the elements are existing in your system.
+	 * 
+	 * @param task - The task event, task command, or task ID.
+	 */
+	public confirmUniversalMenuElementsCommand(task: TaskCommand | string, elementsConfirmation: Record<string, boolean>): Promise<void>
+	{
+		return this._ddpClient.call<[string, string, Record<string, boolean>], void>(`api/v${this._client.apiVersion}/confirmUniversalMenuElements`, this._tenantId, this.getTaskIdFromTask(task), elementsConfirmation);
 	}
 }
