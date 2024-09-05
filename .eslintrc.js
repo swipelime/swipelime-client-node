@@ -85,6 +85,11 @@ module.exports = exports = {
 		],
 		"@typescript-eslint/no-explicit-any": ["off", {}],
 		"no-shadow": "off",
-		"@typescript-eslint/no-shadow": ["error", , { "ignoreTypeValueShadow": true }]
+		"@typescript-eslint/no-shadow": ["error", { "ignoreTypeValueShadow": true }],
+		'no-spaced-func': 'off',
+		'func-call-spacing': 'off',
+		'no-console': ["error", { allow: ["warn", "error"] }],
+		"no-use-before-define": "off",
+		"@typescript-eslint/no-use-before-define": "error"
 	},
 };

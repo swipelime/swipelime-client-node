@@ -41,22 +41,22 @@ export class ServiceHandler
 	* The DDP client instance used for subscribing to tasks.
 	*/
 	private readonly _ddpClient: DDPClient;
-	
+
 	/**
 	* The ID of the tenant.
 	*/
 	private readonly _tenantId: string;
-	
+
 	/**
 	* The event emitter for handling service handler events.
 	*/
 	private readonly _eventEmitter: EventEmitter<ServiceHandlerEventTypes>;
-	
+
 	/**
 	* The subscription for tasks.
 	*/
 	private _tasksSubscription: ddpSubscription;
-	
+
 	/**
 	* The cache for storing tasks.
 	*/
@@ -65,14 +65,16 @@ export class ServiceHandler
 	/**
 	* Gets the event emitter for handling service handler events.
 	*/
-	public get emitter(): EventEmitter<ServiceHandlerEventTypes> {
+	public get emitter(): EventEmitter<ServiceHandlerEventTypes>
+	{
 		return this._eventEmitter;
 	}
 
 	/**
 	* Gets the ID of the tenant.
 	*/
-	public get tenantId(): string {
+	public get tenantId(): string
+	{
 		return this._tenantId;
 	}
 
@@ -122,7 +124,7 @@ export class ServiceHandler
 				// Filter out tasks that have been removed
 				this._taskCache.forEach((task) =>
 				{
-					if(!newTasks.find(newTask => newTask.id === task.id))
+					if(!newTasks.find((newTask) => newTask.id === task.id))
 					{
 						this._taskCache.delete(task.id);
 					}
@@ -164,7 +166,7 @@ export class ServiceHandler
 
 				if(tasksToEmit.length)
 				{
-					this._eventEmitter.emit('newTasks', tasksToEmit);	
+					this._eventEmitter.emit('newTasks', tasksToEmit);
 				}
 			});
 		}
@@ -209,7 +211,7 @@ export class ServiceHandler
 	/**
 	 * Confirms a test command.
 	 * The test command can be fired from the test suite in the integration settings in swipelime. When the test command received, this method has to be called to confirm it. It's for testing purposes only.
-	 * 
+	 *
 	 * @param task - The task event, task command, or task ID.
 	 */
 	public confirmTestCommand(task: TaskCommand | string): Promise<void>
@@ -281,7 +283,7 @@ export class ServiceHandler
 
 	/**
 	 * Retrieves the ordered items for a specific table.
-	 * 
+	 *
 	 * @param tableIdData - The ID of the table.
 	 * @returns A promise that resolves to the order event data.
 	 */
@@ -294,7 +296,7 @@ export class ServiceHandler
 
 	/**
 	 * Cancels the specified order items for a given table.
-	 * 
+	 *
 	 * @param tableIdData - The ID of the table.
 	 * @param orderItemIds - An array of order item IDs to be cancelled.
 	 * @returns A Promise that resolves to void.
@@ -310,7 +312,7 @@ export class ServiceHandler
 
 	/**
 	 * Retrieves the universal menu elements from the server.
-	 * 
+	 *
 	 * @returns A promise that resolves to an array of UniversalMenuItem or UniversalMenuCategory objects.
 	 */
 	public getUniversalMenuElements(): Promise<(UniversalMenuItem | UniversalMenuCategory)[]>
@@ -359,7 +361,7 @@ export class ServiceHandler
 
 	/**
 	 * Upserts universal menu items.
-	 * 
+	 *
 	 * @param universalMenuItemsData - An array of partial UniversalMenuItemData objects.
 	 * @param commandId - You can pass in the command id if this was a command from swipelime.
 	 * @returns A promise that resolves to an object containing the number of items updated and the number of new items.
@@ -373,7 +375,7 @@ export class ServiceHandler
 
 	/**
 	 * Upserts tables.
-	 * 
+	 *
 	 * @param tableData - An array of partial NativeTable objects.
 	 * @param commandId - You can pass in the command id if this was a command from swipelime.
 	 * @returns A promise that resolves to an object containing the number of tables updated and the number of new items.
@@ -394,7 +396,7 @@ export class ServiceHandler
 	{
 		if(!ids?.length) throw swipelimeError('deleteMenuElementsByIds method need valid ids');
 
-		 return this._ddpClient.call<[string, DataIdType[]], number>(`api/v${this._client.apiVersion}/deleteMenuElementsByIds`, this._tenantId, ids);
+		return this._ddpClient.call<[string, DataIdType[]], number>(`api/v${this._client.apiVersion}/deleteMenuElementsByIds`, this._tenantId, ids);
 	}
 
 	/**
@@ -406,7 +408,7 @@ export class ServiceHandler
 	{
 		if(!ids?.length) throw swipelimeError('deleteMenuElementsByIds method need valid ids');
 
-		 return this._ddpClient.call<[string, DataIdType[]], number>(`api/v${this._client.apiVersion}/deleteTables`, this._tenantId, ids);
+		return this._ddpClient.call<[string, DataIdType[]], number>(`api/v${this._client.apiVersion}/deleteTables`, this._tenantId, ids);
 	}
 
 	/**
@@ -414,21 +416,40 @@ export class ServiceHandler
 	 * @param tableIdData - The ID of the table where the custom order item will be added.
 	 * @param customOrderItem - The custom order item to be added.
 	 */
-	public addCustomOrderItem(tableIdData: DataIdType, customOrderItem: CustomOrderItem): Promise<void>
+	public addCustomOrderItems(tableIdData: DataIdType, customOrderItem: CustomOrderItem[]): Promise<void>
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
-		return this._ddpClient.call<[string, DataIdType, CustomOrderItem], void>(`api/v${this._client.apiVersion}/addCustomOrderItem`, this._tenantId, tableIdData, customOrderItem);
+		if(!customOrderItem?.length) throw swipelimeError('addCustomOrderItems method need valid customOrderItem');
+
+		return this._ddpClient.call<[string, DataIdType, CustomOrderItem[]], void>(`api/v${this._client.apiVersion}/addCustomOrderItems`, this._tenantId, tableIdData, customOrderItem);
+	}
+
+	/**
+	 * Changes the status of the order items.
+	 * @param tableIdData - The ID of the table where the custom order item will be added.
+	 * @param orderItemChanges - The order item changes eg. { orderItemId1: 'confirmed', orderItemId2: 'cancelled' }
+	 */
+	public changeOrderItemsStatus(tableIdData: DataIdType, orderItemChanges: Record<string, 'confirmed' | 'cancelled'>): Promise<void>
+	{
+		this.checkOptionalIdValidity(tableIdData);
+
+		if(!orderItemChanges?.length) throw swipelimeError('changeOrderItemStatus method need valid orderItemChanges');
+
+		return this._ddpClient.call<[string, DataIdType, Record<string, 'confirmed' | 'cancelled'>], void>(`api/v${this._client.apiVersion}/changeOrderItemsStatus`, this._tenantId, tableIdData, orderItemChanges);
 	}
 
 	/**
 	 * Confirms a confirm universal menu elements command.
 	 * This command is fired when swipelime needs a confirmation that the elements are existing in your system.
-	 * 
+	 *
 	 * @param task - The task event, task command, or task ID.
+	 * @param elementsConfirmation - The confirmation of the elements eg. { elementId1: true, elementId2: false }
 	 */
 	public confirmUniversalMenuElementsCommand(task: TaskCommand | string, elementsConfirmation: Record<string, boolean>): Promise<void>
 	{
+		if(!elementsConfirmation || !Object.keys(elementsConfirmation).length) throw swipelimeError('confirmUniversalMenuElementsCommand method need valid elementsConfirmation');
+
 		return this._ddpClient.call<[string, string, Record<string, boolean>], void>(`api/v${this._client.apiVersion}/confirmUniversalMenuElements`, this._tenantId, this.getTaskIdFromTask(task), elementsConfirmation);
 	}
 }

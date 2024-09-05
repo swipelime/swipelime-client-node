@@ -59,7 +59,7 @@ export type AllLanguage = typeof allLanguages[number];
 export type LangType =
 {
 	[key in AllLanguage ]?: string;
-}
+};
 
 /**
  * The authentication parameters.
@@ -169,6 +169,17 @@ export type ElementIdData = {
 };
 
 /**
+ * The ID data for a customer.
+ * @id The unique ID of the customer.
+ * @position The position of the customer. First customer that joined the table is 1, second is 2, etc.
+ * If server placed the order the id will be "server" and position will be 0.
+ */
+export type CustomerData = {
+	id: string;
+	position: number;
+};
+
+/**
  * The options for specifying an ID.
  * You can either use the ID or the external ID but at least one must be specified.
  */
@@ -211,7 +222,7 @@ export type TaskCommandDataBase = {
  */
 export interface TestCommandData extends TaskCommandDataBase {
 	commandType: 'test';
-};
+}
 
 /**
  * The data for confirm universal menu elements command.
@@ -222,7 +233,7 @@ export interface ConfirmUniversalMenuElementsCommandData extends TaskCommandData
 		elements: ElementIdData[];
 		tableSessionId?: string;
 	};
-};
+}
 
 /**
  * The list of task command data.
@@ -234,7 +245,7 @@ export type TaskCommandDataList = TestCommandData | ConfirmUniversalMenuElements
  */
 export type OrderItemsData = {
 	orderItemId: string;
-	customerId: string;
+	customerData: CustomerData;
 	menuItemData: ElementIdData;
 	menuData?: ElementIdData;
 	variantData?: ElementIdData;
@@ -293,7 +304,7 @@ export type TaskEventDataBase = {
 export interface TestEventData extends TaskEventDataBase {
 	eventType: 'test';
 	eventData: { test: 'test' };
-};
+}
 
 /**
  * The data for a customer joined table event.
@@ -305,7 +316,7 @@ export interface CustomerJoinedTableEventData extends TaskEventDataBase {
 		name: string;
 		language: AllLanguage;
 	};
-};
+}
 
 /**
  * The data for order items added, confirmed, cancelled or changed events.
@@ -313,8 +324,7 @@ export interface CustomerJoinedTableEventData extends TaskEventDataBase {
 export interface OrderItemsChangedEventData extends TaskEventDataBase {
 	eventType: 'order-items-added' | 'order-items-confirmed' | 'order-items-cancelled' | 'order-items-changed';
 	eventData: OrderEventData;
-};
-
+}
 
 /**
  * The data for order items moved event.
@@ -326,7 +336,7 @@ export interface OrderItemsMovedEventData extends TaskEventDataBase {
 		toTableData: ElementIdData;
 		orderItems: OrderItemsData[];
 	};
-};
+}
 
 /**
  * The data for a payment requested event.
@@ -337,17 +347,17 @@ export interface PaymentRequestedEventData extends TaskEventDataBase {
 		tableData: ElementIdData;
 		paymentType: typeof PaymentTypes;
 	};
-};
+}
 
 export interface UniversalMenuElementsEventData extends TaskEventDataBase {
 	eventType: 'universal-menu-elements-added' | 'universal-menu-elements-updated' | 'universal-menu-elements-removed';
 	eventData: (UniversalMenuItem | UniversalMenuCategory)[];
-};
+}
 
 export interface TablesEventData extends TaskEventDataBase {
 	eventType: 'tables-added' | 'tables-updated' | 'tables-removed';
 	eventData: NativeTable[];
-};
+}
 
 /**
  * The list of task event data.
@@ -359,6 +369,7 @@ export type UniversalMenuItemData = {
 	externalId?: string;
 	enabled: boolean;
 	label: LangType;
+	internalName?: string;
 	price: number;
 	description?: LangType;
 	longDescription?: LangType;
@@ -400,10 +411,20 @@ export type NativeTable = {
 	updated: string
 };
 
+/**
+ * Custom order item that can be added to a table
+ * @orderItemId Optional ID of the ordered item that can be used to identify the order and update / delete it later - if not provided it will be randomly generated
+ * @label The mandatory label of the order item - one of the supported languages must be provided
+ * @price The price of the order item
+ * @quantity The quantity of the order item
+ * @additionalRequests Optional additional requests for the order item
+ */
 export type CustomOrderItem = {
+	orderItemId?: string,
 	label: LangType,
 	price: number,
-	quantity: number
+	quantity: number,
+	additionalRequests?: string
 };
 
 export type UpsertUniversalMenuItemsReturn = {
