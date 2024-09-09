@@ -434,7 +434,7 @@ export class ServiceHandler
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
-		if(!orderItemChanges?.length) throw swipelimeError('changeOrderItemStatus method need valid orderItemChanges');
+		if(!Object.keys(orderItemChanges)?.length) throw swipelimeError('changeOrderItemStatus method need valid orderItemChanges');
 
 		return this._ddpClient.call<[string, DataIdType, Record<string, 'confirmed' | 'cancelled'>], void>(`api/v${this._client.apiVersion}/changeOrderItemsStatus`, this._tenantId, tableIdData, orderItemChanges);
 	}
