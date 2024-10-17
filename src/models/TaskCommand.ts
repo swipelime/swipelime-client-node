@@ -14,15 +14,18 @@ export default class TaskCommand extends Task
 	public readonly data: TaskCommandDataList;
 	public readonly taskType: TaskType = TaskType.command;
 
-	constructor(doc: any, serviceHandler: ServiceHandler)
+	constructor(doc: any, serviceHandler: ServiceHandler, timestampReceived: number)
 	{
-		super(doc, serviceHandler);
+		super(doc, serviceHandler, timestampReceived);
 
 		this.data = doc.data as TaskCommandDataList;
 	}
 
+	/**
+	 * Refuses the task event.
+	*/
 	public async refuse(): Promise<void>
 	{
-		return this._serviceHandler.refuseTaskCommand(this);
+		return this._serviceHandler.refuseTasks([this]);
 	}
 }

@@ -19,16 +19,18 @@ export default abstract class Task
 	public readonly dateCreated: Date;
 	public readonly dateLastRun: Date | undefined;
 	public readonly retries: number | undefined;
+	public readonly timestampReceived: number;
 
 	public get id(): string
 	{
 		return this._id;
 	}
 
-	constructor(doc: any, serviceHandler: ServiceHandler)
+	constructor(doc: any, serviceHandler: ServiceHandler, timestampReceived: number)
 	{
 		extend(this, doc);
 
 		this._serviceHandler = serviceHandler;
+		this.timestampReceived = timestampReceived;
 	}
 }

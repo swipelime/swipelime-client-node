@@ -107,11 +107,22 @@ export type ClientEventTypes = {
 };
 
 /**
+ * Long running tasks that need to be checked.
+ * @systemAlertType The type of system alert.
+ * @tasks The tasks that need to be checked.
+ */
+export type LongRunningTasks = {
+	systemAlertType: SystemAlertType.longRunningTasks;
+	tasks: (TaskEvent | TaskCommand)[];
+};
+
+/**
  * The event types for the service handler.
  */
 export type ServiceHandlerEventTypes =
 {
 	newTasks: [tasks: (TaskEvent | TaskCommand)[]];
+	systemAlert: LongRunningTasks[];
 };
 
 /**
@@ -132,6 +143,14 @@ export type PingResponse = 'pong';
 export type apiV1EventTestData = {
 	test: 'test';
 };
+
+/**
+ * The types of system alerts.
+ * @longRunningTasks - There are tasks that didn't finish in a reasonable time frame so they need to be checked.
+ */
+export enum SystemAlertType {
+	'longRunningTasks' = 1
+}
 
 /**
  * The types of tasks.

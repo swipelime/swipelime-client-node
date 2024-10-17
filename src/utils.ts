@@ -8,6 +8,8 @@ import {
 
 export const swipelimeError = (msg: string | Record<string, any>): Error =>
 {
+	console.error('Swipelime client error', msg);
+
 	if(typeof msg === 'string') return new Error(`swipelime error: ${msg}`);
 
 	return new Error(`swipelime error: ${JSON.stringify(msg)}`);

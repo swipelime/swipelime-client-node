@@ -4,6 +4,7 @@
 
 import { EventEmitter } from 'events';
 import DDPClient, { ddpSubscription } from 'simpleddp-node';
+import { debounce } from 'lodash';
 import { Client } from './index';
 import TaskEvent from './models/TaskEvent';
 import TaskCommand from './models/TaskCommand';
@@ -21,7 +22,8 @@ import {
 	NativeTable,
 	CustomOrderItem,
 	UpsertUniversalMenuItemsReturn,
-	UpsertTablesReturn
+	UpsertTablesReturn,
+	SystemAlertType
 } from './types';
 
 import {
@@ -63,6 +65,27 @@ export class ServiceHandler
 	private _taskCache = new Map<string, TaskEvent | TaskCommand>();
 
 	/**
+	* The latest tasks that have been received.
+	* This is used to store the tasks that have been received while processing the previous batch of tasks.
+	* We are only interested in the latest batch os tasks because that's the most up to date data.
+	*/
+	private _latestTasks: (TaskEvent | TaskCommand)[] | null = null;
+
+	/**
+	* A flag to indicate if we are processing tasks.
+	* This is used to prevent multiple tasks processing at the same time.
+	*/
+	private _isProcessingTasks = false;
+
+	/**
+	 * The timeout for tasks in milliseconds.
+	 * If a task is not processed within this time it will be deferred.
+	 * The check interval is used to check if there are any tasks that have timed out.
+	*/
+	private readonly _taskTimeout = 60000; // 1 minute timeout for tasks
+	private readonly _checkInterval = 30000; // Check every 30 seconds
+
+	/**
 	* Gets the event emitter for handling service handler events.
 	*/
 	public get emitter(): EventEmitter<ServiceHandlerEventTypes>
@@ -98,6 +121,7 @@ export class ServiceHandler
 		this._eventEmitter = new EventEmitter();
 
 		this.init();
+		this.startTaskCheckInterval();
 	}
 
 	public async isReady(): Promise<true>
@@ -106,6 +130,98 @@ export class ServiceHandler
 
 		return true;
 	}
+
+	private async processTasks(newTasks: (TaskEvent | TaskCommand)[]): Promise<void>
+	{
+		// Set the flag that we are processing tasks
+		this._isProcessingTasks = true;
+
+		if(!newTasks || newTasks.length === 0)
+		{
+			this._isProcessingTasks = false;
+			return;
+		}
+
+		// Filter out tasks that have been removed
+		this._taskCache.forEach((task) =>
+		{
+			if(!newTasks.find((newTask) => newTask.id === task.id))
+			{
+				this._taskCache.delete(task.id);
+			}
+		});
+
+		// Get the tasks that are new
+		const { tasksToEmit, commandsToRefuse, eventsToConfirm } = newTasks.reduce((acc, task) =>
+		{
+			if(!this._taskCache.has(task.id))
+			{
+				if(task instanceof TaskEvent && (!task.data.eventType || !eventTypes.includes(task.data.eventType as any)))
+				{
+					acc.eventsToConfirm.push(task);
+					return acc;
+				}
+
+				if(task instanceof TaskCommand && (!task.data.commandType || !commandTypes.includes(task.data.commandType as any)))
+				{
+					acc.commandsToRefuse.push(task);
+					return acc;
+				}
+
+				acc.tasksToEmit.push(task);
+				this._taskCache.set(task.id, task);
+			}
+
+			return acc;
+		}, { tasksToEmit: [] as (TaskEvent | TaskCommand)[], commandsToRefuse: [] as TaskCommand[], eventsToConfirm: [] as TaskEvent[] });
+
+		const afterProcessPromises = [];
+
+		// These will be automatically refused
+		if(commandsToRefuse.length)
+		{
+			afterProcessPromises.push(this.refuseTasks(commandsToRefuse));
+		}
+
+		// These will be automatically confirmed
+		if(eventsToConfirm.length)
+		{
+			afterProcessPromises.push(this.confirmTaskEvents(eventsToConfirm));
+		}
+
+		if(afterProcessPromises.length)
+		{
+			await Promise.all(afterProcessPromises);
+		}
+
+		if(tasksToEmit.length)
+		{
+			this._eventEmitter.emit('newTasks', tasksToEmit);
+		}
+
+		// Processing is done so we can set the flag to false
+		this._isProcessingTasks = false;
+
+		// Check if there are any new tasks that need to be processed
+		if(this._latestTasks)
+		{
+			const latestTasks = this._latestTasks;
+			this._latestTasks = null;
+			this.runTasksQueue(latestTasks); // Use debounce to start processing the next batch of tasks
+		}
+	}
+
+	private runTasksQueue = debounce((newTasks: (TaskEvent | TaskCommand)[]): void =>
+	{
+		if(this._isProcessingTasks)
+		{
+			this._latestTasks = newTasks;
+		}
+		else
+		{
+			this.processTasks(newTasks);
+		}
+	}, 200);
 
 	private async init(): Promise<void>
 	{
@@ -117,58 +233,8 @@ export class ServiceHandler
 
 			const reactiveTasksMap = reactiveTasksCollection.map<IncomingTaskData, TaskEvent | TaskCommand>((tasks) => this.taskMapFunction(tasks));
 
-			reactiveTasksMap.onChange((newTasks: (TaskEvent | TaskCommand)[]) =>
-			{
-				if(!newTasks || newTasks.length === 0) return;
-
-				// Filter out tasks that have been removed
-				this._taskCache.forEach((task) =>
-				{
-					if(!newTasks.find((newTask) => newTask.id === task.id))
-					{
-						this._taskCache.delete(task.id);
-					}
-				});
-
-				// Get the tasks that are new
-				const { tasksToEmit, commandsToRefuse, eventsToConfirm } = newTasks.reduce((acc, task) =>
-				{
-					if(!this._taskCache.has(task.id))
-					{
-						if(task instanceof TaskEvent && (!task.data.eventType || !eventTypes.includes(task.data.eventType as any)))
-						{
-							acc.eventsToConfirm.push(task);
-							return acc;
-						}
-
-						if(task instanceof TaskCommand && (!task.data.commandType || !commandTypes.includes(task.data.commandType as any)))
-						{
-							acc.commandsToRefuse.push(task);
-							return acc;
-						}
-
-						acc.tasksToEmit.push(task);
-						this._taskCache.set(task.id, task);
-					}
-
-					return acc;
-				}, { tasksToEmit: [] as (TaskEvent | TaskCommand)[], commandsToRefuse: [] as TaskCommand[], eventsToConfirm: [] as TaskEvent[] });
-
-				if(commandsToRefuse.length)
-				{
-					this.refuseTaskCommands(commandsToRefuse);
-				}
-
-				if(eventsToConfirm.length)
-				{
-					this.confirmTaskEvents(eventsToConfirm);
-				}
-
-				if(tasksToEmit.length)
-				{
-					this._eventEmitter.emit('newTasks', tasksToEmit);
-				}
-			});
+			// We receive new tasks asynchronously so we need to process them in a queue
+			reactiveTasksMap.onChange((newTasks: (TaskEvent | TaskCommand)[]) => this.runTasksQueue(newTasks));
 		}
 		catch(error)
 		{
@@ -178,8 +244,8 @@ export class ServiceHandler
 
 	private taskMapFunction(taskData: IncomingTaskData): (TaskEvent | TaskCommand)
 	{
-		if(taskData.taskType === TaskType.event) return new TaskEvent(taskData, this);
-		if(taskData.taskType === TaskType.command) return new TaskCommand(taskData, this);
+		if(taskData.taskType === TaskType.event) return new TaskEvent(taskData, this, Date.now());
+		if(taskData.taskType === TaskType.command) return new TaskCommand(taskData, this, Date.now());
 
 		throw swipelimeError('Unknown task type');
 	}
@@ -194,6 +260,35 @@ export class ServiceHandler
 	private checkOptionalIdValidity(idData: DataIdType): void
 	{
 		if(!idData.id && !idData.externalId) throw swipelimeError('id or externalId is required');
+	}
+
+	private startTaskCheckInterval(): void
+	{
+		setInterval(() =>
+		{
+			const now = Date.now();
+			const tasksToDefer: (TaskEvent | TaskCommand)[] = [];
+
+			this._taskCache.forEach((task) =>
+			{
+				if(now - task.timestampReceived > this._taskTimeout)
+				{
+					tasksToDefer.push(task);
+				}
+			});
+
+			if(tasksToDefer.length > 0)
+			{
+				this.deferTasks(tasksToDefer).catch((error) =>
+				{
+					console.error('Error deferring tasks:', error);
+				});
+
+				tasksToDefer.forEach((task) => this._taskCache.delete(task.id));
+
+				this._eventEmitter.emit('systemAlert', { systemAlertType: SystemAlertType.longRunningTasks, tasks: tasksToDefer });
+			}
+		}, this._checkInterval);
 	}
 
 	public confirmTaskEvents(tasks: (TaskEvent | string)[]): Promise<void>
@@ -221,22 +316,33 @@ export class ServiceHandler
 
 	/**
 	* Refusing multiple tasks.
-	* @param tasks - The tasks to refuse but it can also be the IDs of the tasks.
+	* @param tasks - The tasks to refuse but they can also be the IDs of the tasks.
 	*/
-	public refuseTaskCommands(tasks: (TaskCommand | string)[]): Promise<void>
+	public refuseTasks(tasks: (TaskEvent | TaskCommand | string)[]): Promise<void>
 	{
 		const taskIds = tasks.map((task) => this.getTaskIdFromTask(task));
 
-		return this._ddpClient.call<[string, string[]], void>(`api/v${this._client.apiVersion}/refuseTaskCommand`, this._tenantId, taskIds);
+		return this._ddpClient.call<[string, string[]], void>(`api/v${this._client.apiVersion}/refuseTasks`, this._tenantId, taskIds);
 	}
 
 	/**
 	* If you are not able to complete the command then you can refuse it.
-	* @param task - The task to refuse but it can also be the ID of the task.
+	* @param tasks - The tasks to defer but they can also be the IDs of the tasks.
+	* Deferred tasks will be re-sent to you later unless they were deferred too many times.
 	*/
-	public refuseTaskCommand(task: TaskCommand | string): Promise<void>
+	public deferTasks(tasks: (TaskEvent | TaskCommand | string)[]): Promise<void>
 	{
-		return this.refuseTaskCommands([task]);
+		const taskIds = tasks.map((task) => this.getTaskIdFromTask(task));
+
+		return this._ddpClient.call<[string, string[]], void>(`api/v${this._client.apiVersion}/deferTasks`, this._tenantId, taskIds);
+	}
+
+	/**
+	* Test method to make a DDP error.
+	*/
+	public makeError(): Promise<void>
+	{
+		return this._ddpClient.call<[], void>(`api/v${this._client.apiVersion}/makeError`);
 	}
 
 	/**

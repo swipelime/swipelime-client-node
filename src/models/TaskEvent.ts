@@ -14,9 +14,9 @@ export default class TaskEvent extends Task
 	public readonly data: TaskEventDataList;
 	public readonly taskType: TaskType = TaskType.event;
 
-	constructor(doc: any, serviceHandler: ServiceHandler)
+	constructor(doc: any, serviceHandler: ServiceHandler, timestampReceived: number)
 	{
-		super(doc, serviceHandler);
+		super(doc, serviceHandler, timestampReceived);
 
 		this.data = doc.data as TaskEventDataList;
 	}
@@ -27,5 +27,13 @@ export default class TaskEvent extends Task
 	public async confirm(): Promise<void>
 	{
 		return this._serviceHandler.confirmTaskEvent(this);
+	}
+
+	/**
+	 * Refuses the task event.
+	*/
+	public async refuse(): Promise<void>
+	{
+		return this._serviceHandler.refuseTasks([this]);
 	}
 }
