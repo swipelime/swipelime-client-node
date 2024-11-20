@@ -8,6 +8,7 @@ import { debounce } from 'lodash';
 import { Client } from './index';
 import TaskEvent from './models/TaskEvent';
 import TaskCommand from './models/TaskCommand';
+import SystemAlert from './models/SystemAlert';
 import {
 	ServiceHandlerEventTypes,
 	IncomingTaskData,
@@ -25,7 +26,6 @@ import {
 	UpsertTablesReturn,
 	SystemAlertType
 } from './types';
-
 import {
 	swipelimeError
 } from './utils';
@@ -286,7 +286,7 @@ export class ServiceHandler
 
 				tasksToDefer.forEach((task) => this._taskCache.delete(task.id));
 
-				this._eventEmitter.emit('systemAlert', { systemAlertType: SystemAlertType.longRunningTasks, tasks: tasksToDefer });
+				this._eventEmitter.emit('systemAlert', new SystemAlert({ systemAlertType: SystemAlertType['long-running-tasks'], tasks: tasksToDefer }, this));
 			}
 		}, this._checkInterval);
 	}
@@ -343,6 +343,17 @@ export class ServiceHandler
 	public makeError(): Promise<void>
 	{
 		return this._ddpClient.call<[], void>(`api/v${this._client.apiVersion}/makeError`);
+	}
+
+	/**
+	 * Pings the server.
+	 * @returns A promise that resolves to 'pong'.
+	 * This method can be used to check if the server is reachable.
+	 * Valid login is required to use this method.
+	 */
+	public ping(): Promise<'pong'>
+	{
+		return this._ddpClient.call<[], 'pong'>(`api/v${this._client.apiVersion}/ping`);
 	}
 
 	/**
@@ -557,5 +568,38 @@ export class ServiceHandler
 		if(!elementsConfirmation || !Object.keys(elementsConfirmation).length) throw swipelimeError('confirmUniversalMenuElementsCommand method need valid elementsConfirmation');
 
 		return this._ddpClient.call<[string, string, Record<string, boolean>], void>(`api/v${this._client.apiVersion}/confirmUniversalMenuElements`, this._tenantId, this.getTaskIdFromTask(task), elementsConfirmation);
+	}
+
+	/**
+	 * Marks the order items as paid.
+	 * @param tableIdData - The ID of the table where the order items are.
+	 * @param orderItemIds - An array of order item IDs to be marked as paid.
+	 * @param paymentStatus - The payment status to be set for the order items (paid or cancelled).
+	 * @returns A promise that resolves to the payment ID.
+	 */
+	public markOrderItemsPaymentStatus(tableIdData: DataIdType, orderItemIds: string[], paymentStatus: 'paid' | 'cancelled'): Promise<string>
+	{
+		this.checkOptionalIdValidity(tableIdData);
+
+		if(!orderItemIds.length) throw swipelimeError('markOrderItemsAsPaid method need valid orderItemIds');
+
+		if(paymentStatus !== 'paid' && paymentStatus !== 'cancelled') throw swipelimeError('markOrderItemsAsPaid method need valid paymentStatus');
+
+		return this._ddpClient.call<[string, DataIdType, string[], 'paid' | 'cancelled'], string>(`api/v${this._client.apiVersion}/markOrderItemsPaymentStatus`, this._tenantId, tableIdData, orderItemIds, paymentStatus);
+	}
+
+	/**
+	 * Cancels the payment that was coming from the order-items-payment-confirmed
+	 * @param tableIdData - The ID of the table where the payment was made.
+	 * @param paymentId - The ID of the payment to be cancelled.
+	 * @returns A promise that resolves to void.
+	 */
+	public cancelPayment(tableIdData: DataIdType, paymentId: string): Promise<void>
+	{
+		this.checkOptionalIdValidity(tableIdData);
+
+		if(!paymentId) throw swipelimeError('cancelPayment method need valid paymentId');
+
+		return this._ddpClient.call<[string, DataIdType, string], void>(`api/v${this._client.apiVersion}/cancelPayment`, this._tenantId, tableIdData, paymentId);
 	}
 }

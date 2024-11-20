@@ -4,6 +4,7 @@
 
 import TaskEvent from './models/TaskEvent';
 import TaskCommand from './models/TaskCommand';
+import SystemAlert from './models/SystemAlert';
 
 /**
  * @fileoverview This file contains various types and variables used in the application.
@@ -54,12 +55,26 @@ export const allLanguages = [
 /**
  * A union type of all supported languages.
  */
-export type AllLanguage = typeof allLanguages[number];
+export type AllLanguages = typeof allLanguages[number];
 
 export type LangType =
 {
-	[key in AllLanguage ]?: string;
+	[key in AllLanguages ]?: string;
 };
+
+/**
+ * An array of all supported payment types.
+ */
+export const allPaymentTypes = [
+	'cash',
+	'card',
+	'external' // External payment type is used when the payment is handled by an external payment gateway like Stripe
+] as const;
+
+/**
+ * A union type of all supported payment types.
+ */
+export type AllPaymentTypes = typeof allPaymentTypes[number];
 
 /**
  * The authentication parameters.
@@ -107,22 +122,30 @@ export type ClientEventTypes = {
 };
 
 /**
+ * The base data for a system alert.
+ */
+export type SystemAlertDataBase = {
+	systemAlertType: SystemAlertTypes;
+} & Record<string, any>;
+
+/**
  * Long running tasks that need to be checked.
  * @systemAlertType The type of system alert.
  * @tasks The tasks that need to be checked.
  */
-export type LongRunningTasks = {
-	systemAlertType: SystemAlertType.longRunningTasks;
+export interface LongRunningTasks extends SystemAlertDataBase {
+	systemAlertType: 'long-running-tasks';
 	tasks: (TaskEvent | TaskCommand)[];
-};
+}
 
+export type SystemAlertDataList = LongRunningTasks;
 /**
  * The event types for the service handler.
  */
 export type ServiceHandlerEventTypes =
 {
 	newTasks: [tasks: (TaskEvent | TaskCommand)[]];
-	systemAlert: LongRunningTasks[];
+	systemAlert: SystemAlert[];
 };
 
 /**
@@ -149,7 +172,7 @@ export type apiV1EventTestData = {
  * @longRunningTasks - There are tasks that didn't finish in a reasonable time frame so they need to be checked.
  */
 export enum SystemAlertType {
-	'longRunningTasks' = 1
+	'long-running-tasks' = 1
 }
 
 /**
@@ -279,6 +302,7 @@ export type OrderItemsData = {
  */
 export type OrderEventData = {
 	tableData: ElementIdData;
+	tableSessionData: ElementIdData;
 	orderItems: OrderItemsData[];
 };
 
@@ -295,6 +319,9 @@ export const eventTypes = [
 	'order-items-moved',
 	'payment-requested',
 	'payment-request-cancelled',
+	'order-items-payment-requested',
+	'order-items-payment-confirmed',
+	'order-items-payment-cancelled',
 	'universal-menu-elements-added',
 	'universal-menu-elements-updated',
 	'universal-menu-elements-removed',
@@ -307,6 +334,18 @@ export const eventTypes = [
  * The types of events.
  */
 export type EventTypes = typeof eventTypes[number];
+
+/**
+ * The available system alert types.
+ */
+export const systemAlertTypes = [
+	'long-running-tasks'
+] as const;
+
+/**
+ * The types of system alerts.
+ */
+export type SystemAlertTypes = typeof systemAlertTypes[number];
 
 /**
  * The base data for a task event.
@@ -333,7 +372,7 @@ export interface CustomerJoinedTableEventData extends TaskEventDataBase {
 	eventData: {
 		id: string;
 		name: string;
-		language: AllLanguage;
+		language: AllLanguages;
 	};
 }
 
@@ -351,6 +390,7 @@ export interface OrderItemsChangedEventData extends TaskEventDataBase {
 export interface OrderItemsMovedEventData extends TaskEventDataBase {
 	eventType: 'order-items-moved';
 	eventData: {
+		tableSessionData: ElementIdData;
 		fromTableData: ElementIdData;
 		toTableData: ElementIdData;
 		orderItems: OrderItemsData[];
@@ -358,14 +398,46 @@ export interface OrderItemsMovedEventData extends TaskEventDataBase {
 }
 
 /**
- * The data for a payment requested event.
+ * The data for a payment event.
+ * @tableData The data for the table.
+ * @tableSessionData The data for the table session.
+ * @paymentId The ID of the payment.
+ * @orderItems The order items that were paid.
+ * @paymentType The type of payment.
+ * @orderItemsPrice The price of the order items including service fee if there is any.
+ * @tipPrice The tip amount.
+ * @totalPrice The total price including the tip.
+ */
+export type PaymentEventData = {
+	tableData: ElementIdData;
+	tableSessionData: ElementIdData;
+	paymentId: string;
+	orderItems: OrderItemsData[];
+	paymentType: AllPaymentTypes;
+	orderItemsPrice: number;
+	tipPrice: number;
+	totalPrice: number;
+	needReceipt: boolean;
+};
+
+/**
+ * @deprecated payment-requested and payment-request-cancelled events are deprecated, use order-items-payment-requested, order-items-payment-confirmed and order-items-payment-cancelled events instead.
+ * The data for the payment requested event.
  */
 export interface PaymentRequestedEventData extends TaskEventDataBase {
-	eventType: 'payment-requested';
+	eventType: 'payment-requested' | 'payment-request-cancelled';
 	eventData: {
 		tableData: ElementIdData;
 		paymentType: typeof PaymentTypes;
 	};
+}
+
+/**
+ * The data for a payment requested, confirmed or cancelled event.
+ */
+export interface PaymentsEventData extends TaskEventDataBase {
+	eventType: 'order-items-payment-requested' | 'order-items-payment-confirmed' | 'order-items-payment-cancelled';
+	eventData: PaymentEventData;
 }
 
 export interface UniversalMenuElementsEventData extends TaskEventDataBase {
@@ -381,7 +453,15 @@ export interface TablesEventData extends TaskEventDataBase {
 /**
  * The list of task event data.
  */
-export type TaskEventDataList = TestEventData | CustomerJoinedTableEventData | OrderItemsChangedEventData | PaymentRequestedEventData | UniversalMenuElementsEventData | TablesEventData;
+export type TaskEventDataList =
+	TestEventData |
+	CustomerJoinedTableEventData |
+	OrderItemsChangedEventData |
+	PaymentRequestedEventData |
+	PaymentsEventData |
+	UniversalMenuElementsEventData |
+	TablesEventData |
+	OrderItemsMovedEventData;
 
 export type UniversalMenuItemData = {
 	id: string;

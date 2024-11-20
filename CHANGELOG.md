@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2024-11-20
+### Added
+* Payment related new methods: markOrderItemsPaymentStatus and cancelPayment
+* A ping method to check the server/connection status
+* Various type changes
+
 ## [0.3.0] - 2024-10-17
 ### Added
 * Various type changes
