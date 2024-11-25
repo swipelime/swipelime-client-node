@@ -6,13 +6,20 @@ import {
 	Environment
 } from './types';
 
+export const swipelimeConsoleError = (msg: string | Record<string, any>): string =>
+{
+	const errorMessage = typeof msg === 'string' ? `Swipelime client error: ${msg}` : `Swipelime client error: ${JSON.stringify(msg)}`;
+
+	console.error(errorMessage);
+
+	return errorMessage;
+};
+
 export const swipelimeError = (msg: string | Record<string, any>): Error =>
 {
-	console.error('Swipelime client error', msg);
+	const errorMessage = swipelimeConsoleError(msg);
 
-	if(typeof msg === 'string') return new Error(`swipelime error: ${msg}`);
-
-	return new Error(`swipelime error: ${JSON.stringify(msg)}`);
+	return new Error(errorMessage);
 };
 
 export const getServerUrlForEnvironment = (environment?: Environment) =>

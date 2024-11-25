@@ -18,6 +18,7 @@ import TaskCommand from './models/TaskCommand';
 
 import {
 	getServerUrlForEnvironment,
+	swipelimeConsoleError,
 	swipelimeError
 } from './utils';
 
@@ -35,7 +36,7 @@ export class Client
 	private _isConnected = false;
 	private _serviceHandlers: ServiceHandler[] = [];
 	public readonly apiVersion = 1;
-	public readonly clientVersion = '0.3.1';
+	public readonly clientVersion = '0.4.0';
 
 	public get isLoggedIn(): boolean
 	{
@@ -94,7 +95,7 @@ export class Client
 
 			if(!(await this._ddpClient.call<[string], boolean>(`api/v${this.apiVersion}/isVersionValid`, this.clientVersion)))
 			{
-				this._eventEmitter.emit('error', swipelimeError('Client version is not supported'));
+				this._eventEmitter.emit<'error'>('error', swipelimeConsoleError('Client version is not supported'));
 				this._ddpClient.disconnect();
 				return;
 			}
@@ -103,18 +104,24 @@ export class Client
 
 			try
 			{
-				this._ddpClient.login({
+				const loginResult = await this._ddpClient.login({
 					password: this._authParams.password,
 					user: {
 						username: this._authParams.username
 					}
 				});
+
+				if(!loginResult)
+				{
+					this._eventEmitter.emit('error', swipelimeConsoleError('Failed to login'));
+					this._ddpClient.disconnect();
+				}
 			}
 			catch(e)
 			{
 				const meteorError = e as MeteorError;
 
-				this._eventEmitter.emit('error', swipelimeError(meteorError.message));
+				this._eventEmitter.emit('error', swipelimeConsoleError(meteorError.message));
 			}
 		});
 
@@ -142,7 +149,7 @@ export class Client
 
 		this._ddpClient.on('error', (e) =>
 		{
-			this._eventEmitter.emit('error', swipelimeError(e.msg));
+			this._eventEmitter.emit('error', swipelimeConsoleError(e.msg));
 		});
 	}
 

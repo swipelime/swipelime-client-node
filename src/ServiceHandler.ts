@@ -27,6 +27,7 @@ import {
 	SystemAlertType
 } from './types';
 import {
+	swipelimeConsoleError,
 	swipelimeError
 } from './utils';
 
@@ -291,11 +292,32 @@ export class ServiceHandler
 		}, this._checkInterval);
 	}
 
+	public callMethod = async <T extends any[], R = unknown>(method: string, ...args: T): Promise<R | undefined> =>
+	{
+		try
+		{
+			return await this._ddpClient.call<T, R>(method, ...args);
+		}
+		catch(error)
+		{
+			if(error.errorType === 'Meteor.Error')
+			{
+				this._client.emitter.emit('error', swipelimeConsoleError(`Error calling method ${method}: ${error.message}${error.details ? ` ${error.details}` : ''}`));
+			}
+			else
+			{
+				this._client.emitter.emit('error', swipelimeConsoleError(`Error calling method ${method}: ${JSON.stringify(error)}`));
+			}
+
+			return undefined;
+		}
+	};
+
 	public confirmTaskEvents(tasks: (TaskEvent | string)[]): Promise<void>
 	{
 		const taskIds = tasks.map((task) => this.getTaskIdFromTask(task));
 
-		return this._ddpClient.call<[string, string[]], void>(`api/v${this._client.apiVersion}/markTasksAsProcessed`, this._tenantId, taskIds);
+		return this.callMethod<[string, string[]], void>(`api/v${this._client.apiVersion}/markTasksAsProcessed`, this._tenantId, taskIds);
 	}
 
 	public confirmTaskEvent(task: TaskEvent | string): Promise<void>
@@ -311,7 +333,7 @@ export class ServiceHandler
 	 */
 	public confirmTestCommand(task: TaskCommand | string): Promise<void>
 	{
-		return this._ddpClient.call<[string, string], void>(`api/v${this._client.apiVersion}/confirmTestCommand`, this._tenantId, this.getTaskIdFromTask(task));
+		return this.callMethod<[string, string], void>(`api/v${this._client.apiVersion}/confirmTestCommand`, this._tenantId, this.getTaskIdFromTask(task));
 	}
 
 	/**
@@ -322,7 +344,7 @@ export class ServiceHandler
 	{
 		const taskIds = tasks.map((task) => this.getTaskIdFromTask(task));
 
-		return this._ddpClient.call<[string, string[]], void>(`api/v${this._client.apiVersion}/refuseTasks`, this._tenantId, taskIds);
+		return this.callMethod<[string, string[]], void>(`api/v${this._client.apiVersion}/refuseTasks`, this._tenantId, taskIds);
 	}
 
 	/**
@@ -334,15 +356,15 @@ export class ServiceHandler
 	{
 		const taskIds = tasks.map((task) => this.getTaskIdFromTask(task));
 
-		return this._ddpClient.call<[string, string[]], void>(`api/v${this._client.apiVersion}/deferTasks`, this._tenantId, taskIds);
+		return this.callMethod<[string, string[]], void>(`api/v${this._client.apiVersion}/deferTasks`, this._tenantId, taskIds);
 	}
 
 	/**
 	* Test method to make a DDP error.
 	*/
-	public makeError(): Promise<void>
+	public async makeError(): Promise<void>
 	{
-		return this._ddpClient.call<[], void>(`api/v${this._client.apiVersion}/makeError`);
+		return this.callMethod<[], void>(`api/v${this._client.apiVersion}/makeError`);
 	}
 
 	/**
@@ -351,9 +373,9 @@ export class ServiceHandler
 	 * This method can be used to check if the server is reachable.
 	 * Valid login is required to use this method.
 	 */
-	public ping(): Promise<'pong'>
+	public ping(): Promise<'pong' | undefined>
 	{
-		return this._ddpClient.call<[], 'pong'>(`api/v${this._client.apiVersion}/ping`);
+		return this.callMethod<[], 'pong'>(`api/v${this._client.apiVersion}/ping`);
 	}
 
 	/**
@@ -367,7 +389,7 @@ export class ServiceHandler
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
-		return this._ddpClient.call<[string, DataIdType, boolean], void>(`api/v${this._client.apiVersion}/markPaymentChanged`, this._tenantId, tableIdData, true);
+		return this.callMethod<[string, DataIdType, boolean], void>(`api/v${this._client.apiVersion}/markPaymentChanged`, this._tenantId, tableIdData, true);
 	}
 
 	/**
@@ -381,7 +403,7 @@ export class ServiceHandler
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
-		return this._ddpClient.call<[string, DataIdType, boolean], void>(`api/v${this._client.apiVersion}/markPaymentChanged`, this._tenantId, tableIdData, false);
+		return this.callMethod<[string, DataIdType, boolean], void>(`api/v${this._client.apiVersion}/markPaymentChanged`, this._tenantId, tableIdData, false);
 	}
 
 	/**
@@ -395,7 +417,7 @@ export class ServiceHandler
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
-		return this._ddpClient.call<[string, DataIdType], void>(`api/v${this._client.apiVersion}/finishTable`, this._tenantId, tableIdData);
+		return this.callMethod<[string, DataIdType], void>(`api/v${this._client.apiVersion}/finishTable`, this._tenantId, tableIdData);
 	}
 
 	/**
@@ -404,11 +426,11 @@ export class ServiceHandler
 	 * @param tableIdData - The ID of the table.
 	 * @returns A promise that resolves to the order event data.
 	 */
-	public getOrderItems(tableIdData: DataIdType): Promise<OrderItemsData[]>
+	public getOrderItems(tableIdData: DataIdType): Promise<OrderItemsData[] | undefined>
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
-		return this._ddpClient.call<[string, DataIdType], OrderItemsData[]>(`api/v${this._client.apiVersion}/getOrderItems`, this._tenantId, tableIdData);
+		return this.callMethod<[string, DataIdType], OrderItemsData[]>(`api/v${this._client.apiVersion}/getOrderItems`, this._tenantId, tableIdData);
 	}
 
 	/**
@@ -424,7 +446,7 @@ export class ServiceHandler
 
 		if(!orderItemIds?.length) throw swipelimeError('cancelOrderItems method need valid orderItemIds');
 
-		return this._ddpClient.call<[string, string[]], void>(`api/v${this._client.apiVersion}/cancelOrderItems`, this._tenantId, orderItemIds);
+		return this.callMethod<[string, string[]], void>(`api/v${this._client.apiVersion}/cancelOrderItems`, this._tenantId, orderItemIds);
 	}
 
 	/**
@@ -432,36 +454,36 @@ export class ServiceHandler
 	 *
 	 * @returns A promise that resolves to an array of UniversalMenuItem or UniversalMenuCategory objects.
 	 */
-	public getUniversalMenuElements(): Promise<(UniversalMenuItem | UniversalMenuCategory)[]>
+	public getUniversalMenuElements(): Promise<(UniversalMenuItem | UniversalMenuCategory)[] | undefined>
 	{
-		return this._ddpClient.call<[string], (UniversalMenuItem | UniversalMenuCategory)[]>(`api/v${this._client.apiVersion}/getUniversalMenuElements`, this._tenantId);
+		return this.callMethod<[string], (UniversalMenuItem | UniversalMenuCategory)[]>(`api/v${this._client.apiVersion}/getUniversalMenuElements`, this._tenantId);
 	}
 
 	/**
 	 * Retrieves the universal menu items.
 	 * @returns A promise that resolves to an array of UniversalMenuItem objects.
 	 */
-	public getUniversalMenuItems(): Promise<UniversalMenuItem[]>
+	public getUniversalMenuItems(): Promise<UniversalMenuItem[] | undefined>
 	{
-		return this._ddpClient.call<[string, 'item' | 'category' | undefined], UniversalMenuItem[]>(`api/v${this._client.apiVersion}/getUniversalMenuElements`, this._tenantId, 'item');
+		return this.callMethod<[string, 'item' | 'category' | undefined], UniversalMenuItem[]>(`api/v${this._client.apiVersion}/getUniversalMenuElements`, this._tenantId, 'item');
 	}
 
 	/**
 	 * Retrieves the universal menu categories.
 	 * @returns A promise that resolves to an array of UniversalMenuCategory objects.
 	 */
-	public getUniversalMenuCategories(): Promise<UniversalMenuCategory[]>
+	public getUniversalMenuCategories(): Promise<UniversalMenuCategory[] | undefined>
 	{
-		return this._ddpClient.call<[string, 'item' | 'category' | undefined], UniversalMenuCategory[]>(`api/v${this._client.apiVersion}/getUniversalMenuElements`, this._tenantId, 'category');
+		return this.callMethod<[string, 'item' | 'category' | undefined], UniversalMenuCategory[]>(`api/v${this._client.apiVersion}/getUniversalMenuElements`, this._tenantId, 'category');
 	}
 
 	/**
 	 * Retrieves all tables.
 	 * @returns A promise that resolves to an array of NativeTable objects.
 	 */
-	public getTables(): Promise<NativeTable[]>
+	public getTables(): Promise<NativeTable[] | undefined>
 	{
-		return this._ddpClient.call<[string], NativeTable[]>(`api/v${this._client.apiVersion}/getTables`, this._tenantId);
+		return this.callMethod<[string], NativeTable[]>(`api/v${this._client.apiVersion}/getTables`, this._tenantId);
 	}
 
 	/**
@@ -473,7 +495,7 @@ export class ServiceHandler
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
-		return (await this._ddpClient.call<[string, DataIdType[]], NativeTable[]>(`api/v${this._client.apiVersion}/getTables`, this._tenantId, [tableIdData]))[0];
+		return (await this.callMethod<[string, DataIdType[]], NativeTable[]>(`api/v${this._client.apiVersion}/getTables`, this._tenantId, [tableIdData]))?.[0];
 	}
 
 	/**
@@ -483,11 +505,11 @@ export class ServiceHandler
 	 * @param commandId - You can pass in the command id if this was a command from swipelime.
 	 * @returns A promise that resolves to an object containing the number of items updated and the number of new items.
 	 */
-	public upsertUniversalMenuItems(universalMenuItemsData: Partial<UniversalMenuItemData>[], commandId?: string): Promise<UpsertUniversalMenuItemsReturn>
+	public upsertUniversalMenuItems(universalMenuItemsData: Partial<UniversalMenuItemData>[], commandId?: string): Promise<UpsertUniversalMenuItemsReturn | undefined>
 	{
 		if(!universalMenuItemsData?.length) throw swipelimeError('upsertUniversalMenuItems method need valid universalMenuItemsData');
 
-		return this._ddpClient.call<[string, Partial<UniversalMenuItemData>[], string | undefined], UpsertUniversalMenuItemsReturn>(`api/v${this._client.apiVersion}/upsertUniversalMenuItems`, this._tenantId, universalMenuItemsData, commandId);
+		return this.callMethod<[string, Partial<UniversalMenuItemData>[], string | undefined], UpsertUniversalMenuItemsReturn>(`api/v${this._client.apiVersion}/upsertUniversalMenuItems`, this._tenantId, universalMenuItemsData, commandId);
 	}
 
 	/**
@@ -497,11 +519,11 @@ export class ServiceHandler
 	 * @param commandId - You can pass in the command id if this was a command from swipelime.
 	 * @returns A promise that resolves to an object containing the number of tables updated and the number of new items.
 	 */
-	public upsertTables(tableData: Partial<NativeTable>[], commandId?: string): Promise<UpsertTablesReturn>
+	public upsertTables(tableData: Partial<NativeTable>[], commandId?: string): Promise<UpsertTablesReturn | undefined>
 	{
 		if(!tableData?.length) throw swipelimeError('upsertUniversalMenuItems method need valid tableData');
 
-		return this._ddpClient.call<[string, Partial<UniversalMenuItemData>[], string | undefined], UpsertTablesReturn>(`api/v${this._client.apiVersion}/upsertTables`, this._tenantId, tableData, commandId);
+		return this.callMethod<[string, Partial<UniversalMenuItemData>[], string | undefined], UpsertTablesReturn>(`api/v${this._client.apiVersion}/upsertTables`, this._tenantId, tableData, commandId);
 	}
 
 	/**
@@ -509,11 +531,11 @@ export class ServiceHandler
 	 * @param ids - An array of IdOption objects representing the IDs of the menu elements to delete.
 	 * @returns A Promise that resolves to the number of menu elements deleted.
 	 */
-	public deleteMenuElements(ids: DataIdType[]): Promise<number>
+	public deleteMenuElements(ids: DataIdType[]): Promise<number | undefined>
 	{
 		if(!ids?.length) throw swipelimeError('deleteMenuElementsByIds method need valid ids');
 
-		return this._ddpClient.call<[string, DataIdType[]], number>(`api/v${this._client.apiVersion}/deleteMenuElementsByIds`, this._tenantId, ids);
+		return this.callMethod<[string, DataIdType[]], number>(`api/v${this._client.apiVersion}/deleteMenuElementsByIds`, this._tenantId, ids);
 	}
 
 	/**
@@ -521,11 +543,11 @@ export class ServiceHandler
 	 * @param ids - An array of IdOption objects representing the IDs of the tables to delete.
 	 * @returns A Promise that resolves to the number of tables deleted.
 	 */
-	public deleteTables(ids: DataIdType[]): Promise<number>
+	public deleteTables(ids: DataIdType[]): Promise<number | undefined>
 	{
 		if(!ids?.length) throw swipelimeError('deleteMenuElementsByIds method need valid ids');
 
-		return this._ddpClient.call<[string, DataIdType[]], number>(`api/v${this._client.apiVersion}/deleteTables`, this._tenantId, ids);
+		return this.callMethod<[string, DataIdType[]], number>(`api/v${this._client.apiVersion}/deleteTables`, this._tenantId, ids);
 	}
 
 	/**
@@ -539,7 +561,7 @@ export class ServiceHandler
 
 		if(!customOrderItem?.length) throw swipelimeError('addCustomOrderItems method need valid customOrderItem');
 
-		return this._ddpClient.call<[string, DataIdType, CustomOrderItem[]], void>(`api/v${this._client.apiVersion}/addCustomOrderItems`, this._tenantId, tableIdData, customOrderItem);
+		return this.callMethod<[string, DataIdType, CustomOrderItem[]], void>(`api/v${this._client.apiVersion}/addCustomOrderItems`, this._tenantId, tableIdData, customOrderItem);
 	}
 
 	/**
@@ -553,7 +575,7 @@ export class ServiceHandler
 
 		if(!Object.keys(orderItemChanges)?.length) throw swipelimeError('changeOrderItemStatus method need valid orderItemChanges');
 
-		return this._ddpClient.call<[string, DataIdType, Record<string, 'confirmed' | 'cancelled'>], void>(`api/v${this._client.apiVersion}/changeOrderItemsStatus`, this._tenantId, tableIdData, orderItemChanges);
+		return this.callMethod<[string, DataIdType, Record<string, 'confirmed' | 'cancelled'>], void>(`api/v${this._client.apiVersion}/changeOrderItemsStatus`, this._tenantId, tableIdData, orderItemChanges);
 	}
 
 	/**
@@ -567,7 +589,7 @@ export class ServiceHandler
 	{
 		if(!elementsConfirmation || !Object.keys(elementsConfirmation).length) throw swipelimeError('confirmUniversalMenuElementsCommand method need valid elementsConfirmation');
 
-		return this._ddpClient.call<[string, string, Record<string, boolean>], void>(`api/v${this._client.apiVersion}/confirmUniversalMenuElements`, this._tenantId, this.getTaskIdFromTask(task), elementsConfirmation);
+		return this.callMethod<[string, string, Record<string, boolean>], void>(`api/v${this._client.apiVersion}/confirmUniversalMenuElements`, this._tenantId, this.getTaskIdFromTask(task), elementsConfirmation);
 	}
 
 	/**
@@ -577,7 +599,7 @@ export class ServiceHandler
 	 * @param paymentStatus - The payment status to be set for the order items (paid or cancelled).
 	 * @returns A promise that resolves to the payment ID.
 	 */
-	public markOrderItemsPaymentStatus(tableIdData: DataIdType, orderItemIds: string[], paymentStatus: 'paid' | 'cancelled'): Promise<string>
+	public markOrderItemsPaymentStatus(tableIdData: DataIdType, orderItemIds: string[], paymentStatus: 'paid' | 'cancelled'): Promise<string | undefined>
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
@@ -585,7 +607,7 @@ export class ServiceHandler
 
 		if(paymentStatus !== 'paid' && paymentStatus !== 'cancelled') throw swipelimeError('markOrderItemsAsPaid method need valid paymentStatus');
 
-		return this._ddpClient.call<[string, DataIdType, string[], 'paid' | 'cancelled'], string>(`api/v${this._client.apiVersion}/markOrderItemsPaymentStatus`, this._tenantId, tableIdData, orderItemIds, paymentStatus);
+		return this.callMethod<[string, DataIdType, string[], 'paid' | 'cancelled'], string>(`api/v${this._client.apiVersion}/markOrderItemsPaymentStatus`, this._tenantId, tableIdData, orderItemIds, paymentStatus);
 	}
 
 	/**
@@ -600,6 +622,6 @@ export class ServiceHandler
 
 		if(!paymentId) throw swipelimeError('cancelPayment method need valid paymentId');
 
-		return this._ddpClient.call<[string, DataIdType, string], void>(`api/v${this._client.apiVersion}/cancelPayment`, this._tenantId, tableIdData, paymentId);
+		return this.callMethod<[string, DataIdType, string], void>(`api/v${this._client.apiVersion}/cancelPayment`, this._tenantId, tableIdData, paymentId);
 	}
 }

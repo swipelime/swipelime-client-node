@@ -112,11 +112,16 @@ export type User = {
 
 /**
  * The event types for the client.
+ * @connected - The client is connected to the server.
+ * @disconnected - The client is disconnected from the server.
+ * @error - An error occurred.
+ * @login - The client successfully logged in.
+ * @logout - The client successfully logged out.
  */
 export type ClientEventTypes = {
 	connected: [];
 	disconnected: [];
-	error: [e: Error];
+	error: [message: string];
 	login: [user: User];
 	logout: [];
 };
@@ -139,8 +144,11 @@ export interface LongRunningTasks extends SystemAlertDataBase {
 }
 
 export type SystemAlertDataList = LongRunningTasks;
+
 /**
  * The event types for the service handler.
+ * @newTasks - New tasks were received.
+ * @systemAlert - A system alert was received. List of system alerts can be found in the SystemAlertTypes type.
  */
 export type ServiceHandlerEventTypes =
 {

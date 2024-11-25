@@ -35,21 +35,16 @@ const client = new Client({ username, password }, { environment });
 			console.log('available tenants', availableTenants);
 		});
 
-		client.emitter.on('error', (e) =>
+		client.emitter.on('error', (errorMessage) =>
 		{
-			console.error('error', e.message);
+			// You can handle errors here, for example log them or send them to a monitoring service
+			console.error('error', errorMessage);
 		});
 
 		if(!tenantId) throw new Error('SWIPELIME_TENANT_ID environment variable not defined');
 
 		// Register a service handler for one of the available tenants
 		const serviceHandler = await client.addServiceHandler({ tenantId });
-
-		console.log(await serviceHandler.upsertTables([
-			{
-				label: { en: 'Mayonnaise sauce' }
-			}
-		]));
 
 		// Listen for new tasks and process them
 		serviceHandler.emitter.on('newTasks', (tasks) =>
@@ -98,8 +93,18 @@ const client = new Client({ username, password }, { environment });
 				else console.error('unknown task type', task);
 			});
 		});
+
+		// Listen for system alerts and log them
+		// System alerts are used to notify the client about issues with the service
+		// For example if some tasks are processing for too long and need to be checked
+		serviceHandler.emitter.on('systemAlert', (alert) =>
+		{
+			console.log('system alert', alert);
+		});
 	} catch (error) {
-		console.error(error);
-		process.exit(1);
+		console.error('swipelime error', error);
+		
+		// Uncomment this line to exit the process if an error occurs
+		// process.exit(1);
 	}
 })();
