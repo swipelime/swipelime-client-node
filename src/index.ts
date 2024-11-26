@@ -36,7 +36,7 @@ export class Client
 	private _isConnected = false;
 	private _serviceHandlers: ServiceHandler[] = [];
 	public readonly apiVersion = 1;
-	public readonly clientVersion = '0.4.0';
+	public readonly clientVersion = '0.4.1';
 
 	public get isLoggedIn(): boolean
 	{
@@ -153,12 +153,36 @@ export class Client
 		});
 	}
 
+	// Low level method to call a method on the server
+	// This method will catch any errors and emit an 'error' event
+	// Returns undefined if an error occurs
+	public callMethod = async <T extends any[], R = unknown>(method: string, ...args: T): Promise<R | undefined> =>
+	{
+		try
+		{
+			return await this._ddpClient.call<T, R>(method, ...args);
+		}
+		catch(error)
+		{
+			if(error.errorType === 'Meteor.Error')
+			{
+				this.emitter.emit('error', swipelimeConsoleError(`Error calling method ${method}: ${error.message}${error.details ? ` ${error.details}` : ''}`));
+			}
+			else
+			{
+				this.emitter.emit('error', swipelimeConsoleError(`Error calling method ${method}: ${JSON.stringify(error)}`));
+			}
+
+			return undefined;
+		}
+	};
+
 	/**
 	 * Pings the server which will return 'pong'
 	 */
-	public async ping(): Promise<PingResponse>
+	public async ping(): Promise<PingResponse | undefined>
 	{
-		return this._ddpClient.call<[], PingResponse>(`api/v${this.apiVersion}/methods/ping`);
+		return this.callMethod<[], PingResponse>(`api/v${this.apiVersion}/methods/ping`);
 	}
 
 	/**
@@ -178,9 +202,9 @@ export class Client
 	/**
 	 * Returns an array of available tenant IDs that the client can access
 	 */
-	public async getAvailableTenantIds(): Promise<string[]>
+	public async getAvailableTenantIds(): Promise<string[] | undefined>
 	{
-		return this._ddpClient.call<[], string[]>(`api/v${this.apiVersion}/getAvailableTenants`);
+		return this.callMethod<[], string[]>(`api/v${this.apiVersion}/getAvailableTenants`);
 	}
 
 	/**

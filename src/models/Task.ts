@@ -14,8 +14,8 @@ export default abstract class Task
 	protected readonly _serviceHandler: ServiceHandler;
 	protected readonly _id: string;
 	protected readonly taskType: TaskType;
-	protected readonly status: TaskStatus;
 	protected readonly data: Record<string, any>;
+	public readonly status: TaskStatus;
 	public readonly dateCreated: Date;
 	public readonly dateLastRun: Date | undefined;
 	public readonly retries: number | undefined;
