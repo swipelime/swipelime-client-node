@@ -31,8 +31,7 @@ import {
 	swipelimeError
 } from './utils';
 
-export * from './types';
-
+// eslint-disable-next-line import/prefer-default-export
 export class ServiceHandler
 {
 	/**
@@ -374,6 +373,7 @@ export class ServiceHandler
 	}
 
 	/**
+	 * @deprecated Use the markOrderItemsPaymentStatus method instead.
 	* It marks the payment request as done for a specific table.
 	* When the payment is done for a table this method has to be called so our system can reflect to that.
 	* @param tableIdData - The ID of the table.
@@ -388,6 +388,7 @@ export class ServiceHandler
 	}
 
 	/**
+	 * @deprecated Use the markOrderItemsPaymentStatus method instead.
 	* It marks the payment request as cancelled for a specific table.
 	* When the payment is cancelled for a table this method has to be called so our system can reflect to that.
 	* @param tableIdData - The ID of the table.
@@ -588,7 +589,8 @@ export class ServiceHandler
 	}
 
 	/**
-	 * Marks the order items as paid.
+	 * Marks the order items as paid or cancelled.
+	 * This is a feedback for us that the order items are paid and we can mark them as paid in our system.
 	 * @param tableIdData - The ID of the table where the order items are.
 	 * @param orderItemIds - An array of order item IDs to be marked as paid.
 	 * @param paymentStatus - The payment status to be set for the order items (paid or cancelled).
@@ -607,6 +609,8 @@ export class ServiceHandler
 
 	/**
 	 * Cancels the payment that was coming from the order-items-payment-confirmed
+	 * This can be used if the payment request was not successful and you want to cancel it.
+	 * This will mark the order items as unpaid and the customers can pay again.
 	 * @param tableIdData - The ID of the table where the payment was made.
 	 * @param paymentId - The ID of the payment to be cancelled.
 	 * @returns A promise that resolves to void.

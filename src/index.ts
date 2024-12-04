@@ -24,7 +24,7 @@ import {
 
 export * from './types';
 
-export { TaskEvent, TaskCommand };
+export { TaskEvent, TaskCommand, ServiceHandler };
 
 export class Client
 {
@@ -36,7 +36,7 @@ export class Client
 	private _isConnected = false;
 	private _serviceHandlers: ServiceHandler[] = [];
 	public readonly apiVersion = 1;
-	public readonly clientVersion = '0.4.1';
+	public readonly clientVersion = '0.4.2';
 
 	public get isLoggedIn(): boolean
 	{

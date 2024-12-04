@@ -537,7 +537,7 @@ export type CustomOrderItem = {
 export type UpsertUniversalMenuItemsReturn = {
 	updated: number,
 	new: number,
-	noChanges: number,
+	unchanged: number,
 	failed?: number,
 	failedItems?: {
 		error: string,
@@ -548,7 +548,7 @@ export type UpsertUniversalMenuItemsReturn = {
 export type UpsertTablesReturn = {
 	updated: number,
 	new: number,
-	noChanges: number,
+	unchanged: number,
 	failed?: number,
 	failedTables?: {
 		error: string,
