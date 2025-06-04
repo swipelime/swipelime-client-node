@@ -452,6 +452,7 @@ interface TaskOrderPaymentDetailsDataBase {
 	tipAmount: number;
 	totalPrice: number;
 	needReceipt: boolean;
+	isPaid: boolean;
 }
 
 export interface TaskOrderPaymentDetailsDataInternal extends TaskOrderPaymentDetailsDataBase{
