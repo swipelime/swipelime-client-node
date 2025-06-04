@@ -1,7 +1,7 @@
 {
 	"name": "swipelime-client-node",
 	"description": "swipelime-client-node is the official swipelime Node.js client library",
-	"version": "0.4.2",
+	"version": "0.4.3",
 	"author": "swipelime (https://swipelime.com)",
 	"license": "MIT",
 	"repository": {
@@ -53,6 +53,6 @@
 		"clean": "rm -rf dist/*",
 		"lint": "eslint .",
 		"lint:fix": "eslint --fix .",
-		"lint-ts": "tsc --project ./tsconfig.json --noEmit && eslint --ext=ts,ts"
+		"typecheck": "tsc --project ./tsconfig.json --noEmit && eslint --ext=ts,ts"
 	}
 }

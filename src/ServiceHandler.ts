@@ -1,4 +1,4 @@
-// Copyright 2024 swipelime (https://swipelime.com)
+// Copyright (c) 2024 swipelime (https://swipelime.com)
 // Use of this source code is governed by an MIT
 // license that can be found in the LICENSE file.
 
@@ -280,10 +280,20 @@ export class ServiceHandler
 		if(!idData.id && !idData.externalId) throw swipelimeError('id or externalId is required');
 	}
 
+	/**
+	* Starts the interval to check for long-running tasks.
+	* If a task is not processed within the timeout, it will be deferred.
+	*/
 	private startTaskCheckInterval(): void
 	{
 		setInterval(() =>
 		{
+			// We skip the check if the client is not connected
+			if(!this._client.isConnected)
+			{
+				return;
+			}
+
 			const now = Date.now();
 			const tasksToDefer: (TaskEvent | TaskCommand)[] = [];
 
@@ -319,11 +329,11 @@ export class ServiceHandler
 	}
 
 	/**
-	 * Confirms a test command.
-	 * The test command can be fired from the test suite in the integration settings in swipelime. When the test command received, this method has to be called to confirm it. It's for testing purposes only.
-	 *
-	 * @param task - The task event, task command, or task ID.
-	 */
+	* Confirms a test command.
+	* The test command can be fired from the test suite in the integration settings in swipelime. When the test command received, this method has to be called to confirm it. It's for testing purposes only.
+	*
+	* @param task - The task event, task command, or task ID.
+	*/
 	public confirmTestCommand(task: TaskCommand | string): Promise<void>
 	{
 		return this._client.callMethod<[string, string], void>(`api/v${this._client.apiVersion}/confirmTestCommand`, this._tenantId, this.getTaskIdFromTask(task));

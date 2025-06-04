@@ -1,4 +1,4 @@
-// Copyright 2024 swipelime (https://swipelime.com)
+// Copyright (c) 2024 swipelime (https://swipelime.com)
 // Use of this source code is governed by an MIT
 // license that can be found in the LICENSE file.
 

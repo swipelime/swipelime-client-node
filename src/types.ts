@@ -1,4 +1,4 @@
-// Copyright 2024 swipelime (https://swipelime.com)
+// Copyright (c) 2024 swipelime (https://swipelime.com)
 // Use of this source code is governed by an MIT
 // license that can be found in the LICENSE file.
 
@@ -63,18 +63,34 @@ export type LangType =
 };
 
 /**
- * An array of all supported payment types.
+ * The local payment types.
+ * @cash - Cash payment type.
+ * @card - Card payment type.
+ * There can be more local payments so this is not an exhaustive list.
  */
-export const allPaymentTypes = [
+export const localPaymentTypes = [
 	'cash',
-	'card',
-	'external' // External payment type is used when the payment is handled by an external payment gateway like Stripe
+	'card'
 ] as const;
 
 /**
- * A union type of all supported payment types.
+ * The external payment types.
  */
-export type AllPaymentTypes = typeof allPaymentTypes[number];
+export const externalPaymentTypes = [
+	'external' // This is used for external payment processors like Stripe etc.
+] as const;
+
+/**
+ * An array of all supported payment types.
+ */
+export const allPaymentTypes = [...localPaymentTypes, ...externalPaymentTypes] as const;
+
+/**
+ * A union type of all supported payment types.
+ * This includes both local and external payment types.
+ * Also includes string to allow future extensibility.
+ */
+export type AllPaymentTypes = typeof allPaymentTypes[number] | string;
 
 /**
  * The authentication parameters.
@@ -219,6 +235,15 @@ export type ElementIdData = {
 };
 
 /**
+ * The general ID with extended data for an entity.
+ */
+export type ElementIdExtendedData = {
+	id: string;
+   price: number;
+	externalId?: string;
+};
+
+/**
  * The ID data for a customer.
  * @id The unique ID of the customer.
  * @position The position of the customer. First customer that joined the table is 1, second is 2, etc.
@@ -296,10 +321,10 @@ export type TaskCommandDataList = TestCommandData | ConfirmUniversalMenuElements
 export type OrderItemsData = {
 	orderItemId: string;
 	customerData: CustomerData;
-	menuItemData: ElementIdData;
+	menuItemData: ElementIdExtendedData;
 	menuData?: ElementIdData;
-	variantData?: ElementIdData;
-	selectablesData?: ElementIdData[];
+	variantData?: ElementIdExtendedData;
+	selectablesData?: ElementIdExtendedData[];
 	status: 'added' | 'pending' | 'confirmed' | 'cancelled' | 'unknown'
 	quantity: number;
 	additionalRequests?: string;
@@ -307,11 +332,16 @@ export type OrderItemsData = {
 
 /**
  * The data for an order.
+ * @tableData The data for the table.
+ * @tableSessionData The data for the table session.
+ * @orderItems The order items that were added to the table.
+ * @paymentDetails If the order was paid, the payment details will be included here.
  */
 export type OrderEventData = {
 	tableData: ElementIdData;
 	tableSessionData: ElementIdData;
 	orderItems: OrderItemsData[];
+	paymentDetails?: OrderPaymentDetailsData;
 };
 
 /**
@@ -378,6 +408,7 @@ export interface TestEventData extends TaskEventDataBase {
 export interface CustomerJoinedTableEventData extends TaskEventDataBase {
 	eventType: 'customer-joined-table';
 	eventData: {
+      tableData: ElementIdData;
 		id: string;
 		name: string;
 		language: AllLanguages;
@@ -406,26 +437,46 @@ export interface OrderItemsMovedEventData extends TaskEventDataBase {
 }
 
 /**
+ * The data for a payment.
+ * @paymentId The ID of the payment.
+ * @paymentType The type of payment.
+ * @orderItemsPrice The price of the order items including service fee if there is any.
+ * @tipAmount The tip amount.
+ * @totalPrice The total price including the tip.
+ * @needReceipt Whether a receipt is needed.
+ */
+interface TaskOrderPaymentDetailsDataBase {
+	paymentId: string;
+   paymentType: AllPaymentTypes;
+	orderItemsPrice: number;
+	tipAmount: number;
+	totalPrice: number;
+	needReceipt: boolean;
+}
+
+export interface TaskOrderPaymentDetailsDataInternal extends TaskOrderPaymentDetailsDataBase{
+	paymentType: typeof localPaymentTypes[number] | string;
+}
+
+export interface TaskOrderPaymentDetailsDataExternal extends TaskOrderPaymentDetailsDataBase{
+	paymentType: 'external';
+	paymentProcessor: string;
+}
+
+export type OrderPaymentDetailsData = TaskOrderPaymentDetailsDataInternal | TaskOrderPaymentDetailsDataExternal;
+
+/**
  * The data for a payment event.
  * @tableData The data for the table.
  * @tableSessionData The data for the table session.
- * @paymentId The ID of the payment.
  * @orderItems The order items that were paid.
- * @paymentType The type of payment.
- * @orderItemsPrice The price of the order items including service fee if there is any.
- * @tipPrice The tip amount.
- * @totalPrice The total price including the tip.
+ * @paymentDetails The payment details.
  */
 export type PaymentEventData = {
 	tableData: ElementIdData;
 	tableSessionData: ElementIdData;
-	paymentId: string;
 	orderItems: OrderItemsData[];
-	paymentType: AllPaymentTypes;
-	orderItemsPrice: number;
-	tipPrice: number;
-	totalPrice: number;
-	needReceipt: boolean;
+   paymentDetails: OrderPaymentDetailsData;
 };
 
 /**

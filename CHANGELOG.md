@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.3] - 2025-06-04
+### Added
+* PaymentEventData type changes
+* New ElementIdExtendedData for extended data like price
+### Fixed
+* Fixed long running tasks not triggered when client is not connected
+
 ## [0.4.2] - 2024-12-04
 ### Fixed
 * Quick type and comment fixes
