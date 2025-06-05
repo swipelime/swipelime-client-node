@@ -436,6 +436,10 @@ export interface OrderItemsMovedEventData extends TaskEventDataBase {
 	};
 }
 
+export type TaskOrderPaymentFeeType = 'serviceFee' | 'convenienceFee' | 'deliveryFee' | 'other';
+
+export type TaskOrderPaymentFeesType = Partial<Record<TaskOrderPaymentFeeType, { amount: number }>>;
+
 /**
  * The data for a payment.
  * @paymentId The ID of the payment.
@@ -444,6 +448,8 @@ export interface OrderItemsMovedEventData extends TaskEventDataBase {
  * @tipAmount The tip amount.
  * @totalPrice The total price including the tip.
  * @needReceipt Whether a receipt is needed.
+ * @isPaid Whether the payment has already been paid.
+ * @fees Any additional fees that are not included in the order items price.
  */
 interface TaskOrderPaymentDetailsDataBase {
 	paymentId: string;
@@ -453,6 +459,7 @@ interface TaskOrderPaymentDetailsDataBase {
 	totalPrice: number;
 	needReceipt: boolean;
 	isPaid: boolean;
+	fees?: TaskOrderPaymentFeesType;
 }
 
 export interface TaskOrderPaymentDetailsDataInternal extends TaskOrderPaymentDetailsDataBase{
