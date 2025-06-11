@@ -560,14 +560,15 @@ export class ServiceHandler
 	 * Adds a custom order item to the table. It only requires a label (which can be from any language) a quantity and a price.
 	 * @param tableIdData - The ID of the table where the custom order item will be added.
 	 * @param customOrderItem - The custom order item to be added.
+	 * @returns A promise that resolves to an array of order item IDs either the original order item IDs or the newly generated ones.
 	 */
-	public addCustomOrderItems(tableIdData: DataIdType, customOrderItem: CustomOrderItem[]): Promise<void>
+	public addCustomOrderItems(tableIdData: DataIdType, customOrderItem: CustomOrderItem[]): Promise<string[] | undefined>
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
 		if(!customOrderItem?.length) throw swipelimeError('addCustomOrderItems method need valid customOrderItem');
 
-		return this._client.callMethod<[string, DataIdType, CustomOrderItem[]], void>(`api/v${this._client.apiVersion}/addCustomOrderItems`, this._tenantId, tableIdData, customOrderItem);
+		return this._client.callMethod<[string, DataIdType, CustomOrderItem[]], string[]>(`api/v${this._client.apiVersion}/addCustomOrderItems`, this._tenantId, tableIdData, customOrderItem);
 	}
 
 	/**
