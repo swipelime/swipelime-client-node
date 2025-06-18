@@ -24,6 +24,7 @@ import {
 	CustomOrderItem,
 	UpsertUniversalMenuItemsReturn,
 	UpsertTablesReturn,
+	CancelOrderItemsReturn,
 	SystemAlertType
 } from './types';
 import {
@@ -316,11 +317,16 @@ export class ServiceHandler
 		}, this._checkInterval);
 	}
 
+	private callTenantMethod<T extends any[], R = unknown>(methodName: string, ...args: T): Promise<R | undefined>
+	{
+		return this._client.callMethod<[string, ...T], R>(`api/v${this._client.apiVersion}/${methodName}`, this._tenantId, ...args);
+	}
+
 	public confirmTaskEvents(tasks: (TaskEvent | string)[]): Promise<void>
 	{
 		const taskIds = tasks.map((task) => this.getTaskIdFromTask(task));
 
-		return this._client.callMethod<[string, string[]], void>(`api/v${this._client.apiVersion}/markTasksAsProcessed`, this._tenantId, taskIds);
+		return this.callTenantMethod<[string[]], void>('markTasksAsProcessed', taskIds);
 	}
 
 	public confirmTaskEvent(task: TaskEvent | string): Promise<void>
@@ -336,7 +342,7 @@ export class ServiceHandler
 	*/
 	public confirmTestCommand(task: TaskCommand | string): Promise<void>
 	{
-		return this._client.callMethod<[string, string], void>(`api/v${this._client.apiVersion}/confirmTestCommand`, this._tenantId, this.getTaskIdFromTask(task));
+		return this.callTenantMethod<[string], void>('confirmTestCommand', this.getTaskIdFromTask(task));
 	}
 
 	/**
@@ -347,7 +353,7 @@ export class ServiceHandler
 	{
 		const taskIds = tasks.map((task) => this.getTaskIdFromTask(task));
 
-		return this._client.callMethod<[string, string[]], void>(`api/v${this._client.apiVersion}/refuseTasks`, this._tenantId, taskIds);
+		return this.callTenantMethod<[string[]], void>('refuseTasks', taskIds);
 	}
 
 	/**
@@ -360,7 +366,7 @@ export class ServiceHandler
 	{
 		const taskIds = tasks.map((task) => this.getTaskIdFromTask(task));
 
-		return this._client.callMethod<[string, string[]], void>(`api/v${this._client.apiVersion}/deferTasks`, this._tenantId, taskIds);
+		return this.callTenantMethod<[string[]], void>('deferTasks', taskIds);
 	}
 
 	/**
@@ -394,7 +400,7 @@ export class ServiceHandler
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
-		return this._client.callMethod<[string, DataIdType, boolean], void>(`api/v${this._client.apiVersion}/markPaymentChanged`, this._tenantId, tableIdData, true);
+		return this.callTenantMethod<[DataIdType, boolean], void>('markPaymentChanged', tableIdData, true);
 	}
 
 	/**
@@ -409,7 +415,7 @@ export class ServiceHandler
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
-		return this._client.callMethod<[string, DataIdType, boolean], void>(`api/v${this._client.apiVersion}/markPaymentChanged`, this._tenantId, tableIdData, false);
+		return this.callTenantMethod<[DataIdType, boolean], void>('markPaymentChanged', tableIdData, false);
 	}
 
 	/**
@@ -423,7 +429,7 @@ export class ServiceHandler
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
-		return this._client.callMethod<[string, DataIdType], void>(`api/v${this._client.apiVersion}/finishTable`, this._tenantId, tableIdData);
+		return this.callTenantMethod<[DataIdType], void>('finishTable', tableIdData);
 	}
 
 	/**
@@ -436,7 +442,7 @@ export class ServiceHandler
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
-		return this._client.callMethod<[string, DataIdType], OrderItemsData[]>(`api/v${this._client.apiVersion}/getOrderItems`, this._tenantId, tableIdData);
+		return this.callTenantMethod<[DataIdType], OrderItemsData[]>('getOrderItems', tableIdData);
 	}
 
 	/**
@@ -452,7 +458,7 @@ export class ServiceHandler
 
 		if(!orderItemIds?.length) throw swipelimeError('cancelOrderItems method need valid orderItemIds');
 
-		return this._client.callMethod<[string, string[]], void>(`api/v${this._client.apiVersion}/cancelOrderItems`, this._tenantId, orderItemIds);
+		return this.callTenantMethod<[DataIdType, string[]], void>('cancelOrderItems', tableIdData, orderItemIds);
 	}
 
 	/**
@@ -462,7 +468,7 @@ export class ServiceHandler
 	 */
 	public getUniversalMenuElements(): Promise<(UniversalMenuItem | UniversalMenuCategory)[] | undefined>
 	{
-		return this._client.callMethod<[string], (UniversalMenuItem | UniversalMenuCategory)[]>(`api/v${this._client.apiVersion}/getUniversalMenuElements`, this._tenantId);
+		return this.callTenantMethod<[string], (UniversalMenuItem | UniversalMenuCategory)[]>('getUniversalMenuElements', this._tenantId);
 	}
 
 	/**
@@ -471,7 +477,7 @@ export class ServiceHandler
 	 */
 	public getUniversalMenuItems(): Promise<UniversalMenuItem[] | undefined>
 	{
-		return this._client.callMethod<[string, 'item' | 'category' | undefined], UniversalMenuItem[]>(`api/v${this._client.apiVersion}/getUniversalMenuElements`, this._tenantId, 'item');
+		return this.callTenantMethod<[string, 'item' | 'category' | undefined], UniversalMenuItem[]>('getUniversalMenuElements', this._tenantId, 'item');
 	}
 
 	/**
@@ -480,7 +486,7 @@ export class ServiceHandler
 	 */
 	public getUniversalMenuCategories(): Promise<UniversalMenuCategory[] | undefined>
 	{
-		return this._client.callMethod<[string, 'item' | 'category' | undefined], UniversalMenuCategory[]>(`api/v${this._client.apiVersion}/getUniversalMenuElements`, this._tenantId, 'category');
+		return this.callTenantMethod<[string, 'item' | 'category' | undefined], UniversalMenuCategory[]>('getUniversalMenuElements', this._tenantId, 'category');
 	}
 
 	/**
@@ -489,7 +495,7 @@ export class ServiceHandler
 	 */
 	public getTables(): Promise<NativeTable[] | undefined>
 	{
-		return this._client.callMethod<[string], NativeTable[]>(`api/v${this._client.apiVersion}/getTables`, this._tenantId);
+		return this.callTenantMethod<[void], NativeTable[]>('getTables');
 	}
 
 	/**
@@ -501,7 +507,7 @@ export class ServiceHandler
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
-		return (await this._client.callMethod<[string, DataIdType[]], NativeTable[]>(`api/v${this._client.apiVersion}/getTables`, this._tenantId, [tableIdData]))?.[0];
+		return (await this.callTenantMethod<[DataIdType[]], NativeTable[]>('getTables', [tableIdData]))?.[0];
 	}
 
 	/**
@@ -515,7 +521,7 @@ export class ServiceHandler
 	{
 		if(!universalMenuItemsData?.length) throw swipelimeError('upsertUniversalMenuItems method need valid universalMenuItemsData');
 
-		return this._client.callMethod<[string, Partial<UniversalMenuItemData>[], string | undefined], UpsertUniversalMenuItemsReturn>(`api/v${this._client.apiVersion}/upsertUniversalMenuItems`, this._tenantId, universalMenuItemsData, commandId);
+		return this.callTenantMethod<[Partial<UniversalMenuItemData>[], string | undefined], UpsertUniversalMenuItemsReturn>('upsertUniversalMenuItems', universalMenuItemsData, commandId);
 	}
 
 	/**
@@ -529,7 +535,7 @@ export class ServiceHandler
 	{
 		if(!tableData?.length) throw swipelimeError('upsertUniversalMenuItems method need valid tableData');
 
-		return this._client.callMethod<[string, Partial<UniversalMenuItemData>[], string | undefined], UpsertTablesReturn>(`api/v${this._client.apiVersion}/upsertTables`, this._tenantId, tableData, commandId);
+		return this.callTenantMethod<[Partial<UniversalMenuItemData>[], string | undefined], UpsertTablesReturn>('upsertTables', tableData, commandId);
 	}
 
 	/**
@@ -541,7 +547,7 @@ export class ServiceHandler
 	{
 		if(!ids?.length) throw swipelimeError('deleteMenuElementsByIds method need valid ids');
 
-		return this._client.callMethod<[string, DataIdType[]], number>(`api/v${this._client.apiVersion}/deleteMenuElementsByIds`, this._tenantId, ids);
+		return this.callTenantMethod<[DataIdType[]], number>('deleteMenuElementsByIds', ids);
 	}
 
 	/**
@@ -553,7 +559,7 @@ export class ServiceHandler
 	{
 		if(!ids?.length) throw swipelimeError('deleteMenuElementsByIds method need valid ids');
 
-		return this._client.callMethod<[string, DataIdType[]], number>(`api/v${this._client.apiVersion}/deleteTables`, this._tenantId, ids);
+		return this.callTenantMethod<[DataIdType[]], number>('deleteTables', ids);
 	}
 
 	/**
@@ -568,7 +574,7 @@ export class ServiceHandler
 
 		if(!customOrderItem?.length) throw swipelimeError('addCustomOrderItems method need valid customOrderItem');
 
-		return this._client.callMethod<[string, DataIdType, CustomOrderItem[]], string[]>(`api/v${this._client.apiVersion}/addCustomOrderItems`, this._tenantId, tableIdData, customOrderItem);
+		return this.callTenantMethod<[DataIdType, CustomOrderItem[]], string[]>('addCustomOrderItems', tableIdData, customOrderItem);
 	}
 
 	/**
@@ -576,13 +582,13 @@ export class ServiceHandler
 	 * @param tableIdData - The ID of the table where the custom order item will be added.
 	 * @param orderItemChanges - The order item changes eg. { orderItemId1: 'confirmed', orderItemId2: 'cancelled' }
 	 */
-	public changeOrderItemsStatus(tableIdData: DataIdType, orderItemChanges: Record<string, 'confirmed' | 'cancelled'>): Promise<void>
+	public changeOrderItemsStatus(tableIdData: DataIdType, orderItemChanges: Record<string, 'confirmed' | 'cancelled'>): Promise<CancelOrderItemsReturn | undefined>
 	{
 		this.checkOptionalIdValidity(tableIdData);
 
 		if(!Object.keys(orderItemChanges)?.length) throw swipelimeError('changeOrderItemStatus method need valid orderItemChanges');
 
-		return this._client.callMethod<[string, DataIdType, Record<string, 'confirmed' | 'cancelled'>], void>(`api/v${this._client.apiVersion}/changeOrderItemsStatus`, this._tenantId, tableIdData, orderItemChanges);
+		return this.callTenantMethod<[DataIdType, Record<string, 'confirmed' | 'cancelled'>], CancelOrderItemsReturn>('changeOrderItemsStatus', tableIdData, orderItemChanges);
 	}
 
 	/**
@@ -596,7 +602,7 @@ export class ServiceHandler
 	{
 		if(!elementsConfirmation || !Object.keys(elementsConfirmation).length) throw swipelimeError('confirmUniversalMenuElementsCommand method need valid elementsConfirmation');
 
-		return this._client.callMethod<[string, string, Record<string, boolean>], void>(`api/v${this._client.apiVersion}/confirmUniversalMenuElements`, this._tenantId, this.getTaskIdFromTask(task), elementsConfirmation);
+		return this.callTenantMethod<[string, Record<string, boolean>], void>('confirmUniversalMenuElements', this.getTaskIdFromTask(task), elementsConfirmation);
 	}
 
 	/**
@@ -615,7 +621,7 @@ export class ServiceHandler
 
 		if(paymentStatus !== 'paid' && paymentStatus !== 'cancelled') throw swipelimeError('markOrderItemsAsPaid method need valid paymentStatus');
 
-		return this._client.callMethod<[string, DataIdType, string[], 'paid' | 'cancelled'], string>(`api/v${this._client.apiVersion}/markOrderItemsPaymentStatus`, this._tenantId, tableIdData, orderItemIds, paymentStatus);
+		return this.callTenantMethod<[DataIdType, string[], 'paid' | 'cancelled'], string>('markOrderItemsPaymentStatus', tableIdData, orderItemIds, paymentStatus);
 	}
 
 	/**
@@ -632,6 +638,6 @@ export class ServiceHandler
 
 		if(!paymentId) throw swipelimeError('cancelPayment method need valid paymentId');
 
-		return this._client.callMethod<[string, DataIdType, string], void>(`api/v${this._client.apiVersion}/cancelPayment`, this._tenantId, tableIdData, paymentId);
+		return this.callTenantMethod<[DataIdType, string], void>('cancelPayment', tableIdData, paymentId);
 	}
 }

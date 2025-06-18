@@ -579,7 +579,7 @@ export type NativeTable = {
 
 /**
  * Custom order item that can be added to a table
- * @orderItemId Optional ID of the ordered item that can be used to identify the order and update / delete it later - if not provided it will be randomly generated
+ * @orderItemId Optional ID of the ordered item that can be used to identify the order and update / delete it later - if not provided it will be automatically generated
  * @label The mandatory label of the order item - one of the supported languages must be provided
  * @price The price of the order item
  * @quantity The quantity of the order item
@@ -613,4 +613,10 @@ export type UpsertTablesReturn = {
 		error: string,
 		table: Partial<NativeTable>
 	}[]
+};
+
+export type CancelOrderItemsReturn = {
+	cancelled: number,
+	failed: number,
+	failedOrderItemIds?: string[]
 };
